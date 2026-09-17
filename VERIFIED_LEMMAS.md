@@ -1,24 +1,16 @@
-# Manuscript verification map
+# Verification map
 
-Updated 2026-09-17. Eleven complete manuscript lemmas, one proposition, and
-the final theorem are verified.
-The introductory `thm:intro` is the same result restated as `thm:main`.
+Eleven lemmas, one proposition, and the final theorem of the paper are
+verified. The target is
 
-The target is `binary_existence_2t_minus_1.tex` on `main` at base commit `796e12d`.
-Its Git-blob SHA-256 (UTF-8, LF line endings) is
-`eb83fd22474a9653625db44910c21bf9564ba0b4b44ae6d8eeb13c131028b1a3`.
-Compared with the originally checked `74df18a` manuscript, this revision adds
-nine explanatory lines at the start of the counting proof and clarifies that
-coverage uses a surviving letter at the same source position, not just an equal
-bit value. The Lean origin argument already proves equality of those positions.
-The verified statements, assumptions, and mathematical proof content are unchanged.
-The coverage clarification was merged from remote commit `99f9cd3` before
-this extension. Remote commit `a1e7468` adds related-work context and references;
-it was incorporated during the earlier check without changing any Lean sources.
-The author's completed hand review recorded in `d264a1b` was incorporated
-during this extension; the target manuscript is unchanged.
-This formalization extension itself changes no manuscript text.
-The separate finite-hash manuscript is not the target.
+> Eyal En Gad, *Polynomially larger deletion codes by linear hashing of
+> substring counts*, arXiv:XXXX.XXXXX (version 1).
+
+Statements are identified below by the LaTeX labels of the paper's source;
+the README gives the corresponding lemma numbers. The introductory
+`thm:intro` is the same result restated as `thm:main`. No statement of a
+lemma, proposition or theorem has changed since version 1; later revisions
+of the paper only clarify the prose.
 
 ## Complete manuscript statements
 
@@ -30,7 +22,7 @@ The separate finite-hash manuscript is not the target.
 | `lem:rigidity`: Shared source letters | `EditRigidity.shared_source_letters`, `EditRigidity.one_edit_unique`, and `ScriptRigidity.within_one_unique` | With k >= 1, a k-unique source, and two fixed valid single edits (including no edit), equal in-bounds (L-1)-windows contain a common length-k block of surviving source positions at the same window offset. Every resulting word is (L-1)-unique. Actual-script versions derive the concrete edits from `WithinEdits 1`; no origin map, clean block, or edited-word uniqueness is assumed. The paper's k >= 2 ensures positivity. |
 | `lem:coverage`: Coverage of separated conflicts | `SeparatedTraceCoverage.catalogueRule` and `VerifiedConflictGraphWitness.separated_coverage` | An actual trace from a k-unique source with exactly t deletions and t insertions and 4L matched-column separation from other edits and boundaries yields the concrete catalogue rule for its full spectrum difference. All local words, balance, vertex disjointness, and the signed sum are derived. No target uniqueness or supplied catalogue presentation. The finite-word interface also handles k = 0. |
 | `lem:hash-independent`: Independent differences | `RandomHash.independent_differences`, `RandomHash.real_rules_survival_probability_toReal`, and `RandomHash.real_nonzero_test_probability_toReal` | For any fixed finite family of rationally independent integer vectors, the actual hash with independent uniform real weights on [0,1) has independent uniform circle outputs. For Q >= 2, all R fixed catalogue members survive with probability (2/Q)^R; any nonzero integer vector passes the strict norm test with probability 2/Q. Surjectivity, normalization, independence, and arc measures are derived. No primitivity or unimodularity assumption. |
-| `lem:nonsep`: The nonseparated family is thin | `NonseparatedFamily.nonseparated_family_thin` | For t >= 2, a k-unique length-n source, n >= L = 3(k+1), and Q >= 2, the actual exceptional event has probability at most 2 c_t L n^(2t-1)/Q for an explicit positive constant depending only on t. The finite partner count, reconstruction, separation-failure saving, nonzero spectrum differences, and probability union bound are derived. Partners need not be unique. The n >= L hypothesis is the manuscript's global assumption from line 407. |
+| `lem:nonsep`: The nonseparated family is thin | `NonseparatedFamily.nonseparated_family_thin` | For t >= 2, a k-unique length-n source, n >= L = 3(k+1), and Q >= 2, the actual exceptional event has probability at most 2 c_t L n^(2t-1)/Q for an explicit positive constant depending only on t. The finite partner count, reconstruction, separation-failure saving, nonzero spectrum differences, and probability union bound are derived. Partners need not be unique. The n >= L hypothesis is the paper's standing assumption, stated after equation (3) in Section 2.3. |
 | `lem:block`: Connected blocks | `ConnectedBlocks.adjoining_rule_bound` and `ConnectedBlocks.connected_block_bound` | Catalogue rules have concrete presentations by 2t bubbles with the paper's geometry and balance. Adjoining an adjacent rule increases the intrinsic component count by at most 2t-1. A nonempty rule set connected by adjacencies within that set satisfies c(B) <= (2t-1) times B.card + 1. The formal result allows t >= 1; the paper assumes t >= 2. |
 | `lem:saving`: Savings from a relation | `RelationSavings.savings_from_relation` | An actual finite set I of catalogue rules, another catalogue rule w, and a rational coordinatewise relation w = sum of a(u)u over I, with every a(u) nonzero, imply c(I) <= t times I.card + t. The result does not need the paper's extra independence, generation, or I.card >= 2 restrictions. |
 | `lem:witness`: Bounded witness | `VerifiedConflictGraphWitness.bounded_witness` | For t >= 2, Q >= 2, an additive circle hash, and a retained vertex whose component in the actual finite conflict graph is not two-colorable, derives an independent surviving generating witness and the exact counted-set predicate, with all manuscript size and component bounds. The exceptional set, separated edge traces, odd walk, catalogue coverage, and equal-bin survival are derived. No coverage premise remains. |
@@ -439,6 +431,6 @@ The correspondence with the manuscript is a mathematical review of definitions
 and hypotheses; Lean checks the formal statements themselves. The verified
 scope includes the eleven mapped lemmas, the obstruction proposition, and the
 final optimal-redundancy theorem. It does not certify every narrative statement,
-historical comparison, or related-literature claim in the manuscript, and the
-separate finite-hash manuscript is outside this target. The final code selection
-is an existence proof, with no efficient encoder or decoder asserted.
+historical comparison, or related-literature claim in the paper. The final
+code selection is an existence proof, with no efficient encoder or decoder
+asserted.
