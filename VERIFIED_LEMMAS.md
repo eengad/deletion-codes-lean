@@ -4,7 +4,8 @@ Eleven lemmas, one proposition, and the final theorem of the paper are
 verified. The target is
 
 > Eyal En Gad, *Polynomially larger deletion codes by linear hashing of
-> substring counts*, arXiv:XXXX.XXXXX (version 1).
+> substring counts*, arXiv preprint, submitted 16 September 2026
+> (version 1; identifier pending).
 
 Statements are identified below by the LaTeX labels of the paper's source;
 the README gives the corresponding lemma numbers. The introductory
