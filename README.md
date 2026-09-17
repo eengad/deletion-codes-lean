@@ -85,8 +85,7 @@ final theorem are Lean's standard `propext`, `Classical.choice` and
 
 The formalization was developed with the assistance of large language
 models, as was the paper. Every definition and proof in this repository is
-checked by the Lean kernel; the author takes responsibility for the
-correspondence between the formal statements and the paper.
+checked by the Lean kernel.
 
 ## Licence
 
