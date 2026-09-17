@@ -92,4 +92,5 @@ checked by the Lean kernel.
 
 ## Licence
 
-Apache-2.0; see [LICENSE](LICENSE).
+Copyright 2026 Eyal En Gad. Licensed under the Apache License, Version 2.0;
+see [LICENSE](LICENSE).
