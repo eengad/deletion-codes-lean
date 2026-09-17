@@ -425,7 +425,7 @@ itself, not merely on a supplied feasible code.
 
 The checked statements have no admitted proofs or added axioms. Their axiom
 reports use only `propext`, `Classical.choice`, and `Quot.sound`, or subsets of
-these. Compilation and the source hashes are recorded in `STATUS.json`.
+these. The build is reproduced from source by this repository's CI workflow.
 
 The correspondence with the manuscript is a mathematical review of definitions
 and hypotheses; Lean checks the formal statements themselves. The verified
