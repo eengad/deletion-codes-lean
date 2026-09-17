@@ -1,5 +1,7 @@
 # deletion-codes-lean
 
+[![build](https://github.com/eengad/deletion-codes-lean/actions/workflows/build.yml/badge.svg)](https://github.com/eengad/deletion-codes-lean/actions/workflows/build.yml)
+
 A Lean 4 formalization of the main theorem of
 
 > Eyal En Gad, *Polynomially larger deletion codes by linear hashing of
