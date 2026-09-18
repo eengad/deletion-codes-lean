@@ -134,6 +134,11 @@ theorem pathInitialAgreement (k : ℕ) (h : Header) (long : Letters) :
     simp only [negativePath, positivePath, ho]
     exact deletion_before long (editOffset k) 0 (windowLength k - 1)
       (by unfold editOffset; omega)
+  | substitution =>
+    simp only [negativePath, positivePath, ho]
+    intro i hi
+    exact (flip_agree_of_avoid long (editOffset k) 0 (windowLength k - 1)
+      (Or.inl (by unfold editOffset; omega)) i hi).symm
 
 #print axioms readPath_bounds
 #print axioms readPath_sound

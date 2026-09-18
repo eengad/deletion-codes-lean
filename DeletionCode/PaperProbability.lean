@@ -13,7 +13,7 @@ open MeasureTheory Windows HeaderRecovery SignedSupport CircleUniform
 open ExceptionalCountArithmetic ExceptionalProbability ObstructionProbability
 open scoped ENNReal
 
-def threshold (t : ℕ) : ℕ := max (4 * t + 2) (exceptionalConstant t)
+def threshold (t : ℕ) : ℕ := max (4 * t + 3) (exceptionalConstant t)
 
 theorem labels_ge_two (t n Q : ℕ) (hn : 1 ≤ n)
     (hQ : 8 * ObstructionBound.scale t n (PaperParameters.k n) ≤ Q) : 2 ≤ Q := by
@@ -59,7 +59,7 @@ theorem total_discard_le {n : ℕ} (t Q : ℕ) (ht : 2 ≤ t) (x : Bits n)
       (exceptionalEvent t (PaperParameters.k n) Q x ∪ obstructionEvent t (PaperParameters.k n) Q x) ≤
         ENNReal.ofReal (1 / 3 : ℝ) := by
   have hn : 1 ≤ n := by have := PaperParameters.nine_le_L n; omega
-  have hL : 4 * t + 2 ≤ PaperParameters.L n := (le_max_left _ _).trans hready
+  have hL : 4 * t + 3 ≤ PaperParameters.L n := (le_max_left _ _).trans hready
   have hC : exceptionalConstant t ≤ PaperParameters.L n := (le_max_right _ _).trans hready
   calc
     _ ≤ realWeights (Gram (PaperParameters.L n)) (exceptionalEvent t (PaperParameters.k n) Q x) +
@@ -81,7 +81,7 @@ theorem obstructions_are_rare (t : ℕ) (ht : 2 ≤ t) :
         KUnique (padBits x) n (PaperParameters.k n) →
           realWeights (Gram (PaperParameters.L n)) (obstructionEvent t (PaperParameters.k n) Q x) ≤
             ENNReal.ofReal (1 / 12 : ℝ) := by
-  filter_upwards [PaperParameters.eventually_ready (4 * t + 2)] with n hn
+  filter_upwards [PaperParameters.eventually_ready (4 * t + 3)] with n hn
   intro Q hQ x hx
   exact ObstructionBound.obstruction_measure_le t (PaperParameters.k n) Q ht x hx (by omega) hn.2.2
     (PaperParameters.le_two_pow_of_L_lt n) hQ (labels_ge_two t n Q (by omega) hQ)

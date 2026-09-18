@@ -13,15 +13,22 @@ the README gives the corresponding lemma numbers. The introductory
 lemma, proposition or theorem has changed since version 1; later revisions
 of the paper only clarify the prose.
 
+The formal statements are for the edit model, which is stronger than the
+paper's: an edit is a single insertion, deletion or substitution, a code
+corrects t edits, and every lemma below is proved with substitutions
+included. The paper's deletion-only and insertion/deletion statements are
+special cases. The section "The edit model" at the end lists exactly what
+changes.
+
 ## Complete manuscript statements
 
 | Paper statement | Lean theorem | Hypotheses and interpretation |
 | --- | --- | --- |
 | `lem:family`: Most words are k-unique | `UniqueWordCount.most_words_unique_real` and `UniqueWordCount.half_words_le_card_unique` | For positive n and the actual k = 2 ceil(log_2 n) + 2, the cardinality of the finite k-unique family is at least (1 - binomial(n,2)/2^k) times 2^n, at least (7/8) times 2^n, and at least 2^(n-1). Repeated substrings may overlap; their count is derived from a concrete injective encoding. The union bound, pair count, and ceiling-log estimate are proved. The family uses exactly the conflict graph's word and uniqueness definitions. |
 | `lem:path`: The spectrum is a simple path, and determines the word | `SpectrumPath.spectrum_is_simple_path_and_determines_word` | A word of length n >= L is (L-1)-unique. L >= 1 is explicit, as ensured by the paper's L = 3(k+1). Actual integer spectrum counts are Boolean; every path vertex and edge is accounted for; any length-n word with equal spectrum has the same letters. No uniqueness assumption on the competing word. |
-| `lem:confuse`: Equal-length confusability | `EditAlignment.equal_length_confusability` | Two length-n binary lists reach the same output using at most t single insertions/deletions each. The result constructs actual matched/deletion/insertion alignment columns with d <= t edits of each kind. Distinctness of the two words is unnecessary. |
-| `lem:rigidity`: Shared source letters | `EditRigidity.shared_source_letters`, `EditRigidity.one_edit_unique`, and `ScriptRigidity.within_one_unique` | With k >= 1, a k-unique source, and two fixed valid single edits (including no edit), equal in-bounds (L-1)-windows contain a common length-k block of surviving source positions at the same window offset. Every resulting word is (L-1)-unique. Actual-script versions derive the concrete edits from `WithinEdits 1`; no origin map, clean block, or edited-word uniqueness is assumed. The paper's k >= 2 ensures positivity. |
-| `lem:coverage`: Coverage of separated conflicts | `SeparatedTraceCoverage.catalogueRule` and `VerifiedConflictGraphWitness.separated_coverage` | An actual trace from a k-unique source with exactly t deletions and t insertions and 4L matched-column separation from other edits and boundaries yields the concrete catalogue rule for its full spectrum difference. All local words, balance, vertex disjointness, and the signed sum are derived. No target uniqueness or supplied catalogue presentation. The finite-word interface also handles k = 0. |
+| `lem:confuse`: Equal-length confusability | `EditAlignment.equal_length_confusability` | Two length-n binary lists reach the same output using at most t single insertions, deletions and substitutions each. The result constructs an actual alignment with d deletions, d insertions and s substitutions, where 2d + s <= 2t. Distinctness of the two words is unnecessary. |
+| `lem:rigidity`: Shared source letters | `EditRigidity.shared_source_letters`, `EditRigidity.one_edit_unique`, and `ScriptRigidity.within_one_unique` | With k >= 1, a k-unique source, and two fixed valid single edits (no edit, a deletion, an insertion or a substitution), equal in-bounds (L-1)-windows contain a common length-k block of surviving source positions at the same window offset. Every resulting word is (L-1)-unique. Actual-script versions derive the concrete edits from `WithinEdits 1`; no origin map, clean block, or edited-word uniqueness is assumed. The paper's k >= 2 ensures positivity. |
+| `lem:coverage`: Coverage of separated conflicts | `SeparatedTraceCoverage.catalogueRule` and `VerifiedConflictGraphWitness.separated_coverage` | An actual trace from a k-unique source with d deletions, d insertions and 2t-2d substitutions, and 4L matched-column separation from other edits and boundaries, yields the concrete catalogue rule for its full spectrum difference. All local words, balance, vertex disjointness, and the signed sum are derived. No target uniqueness or supplied catalogue presentation. The finite-word interface also handles k = 0. |
 | `lem:hash-independent`: Independent differences | `RandomHash.independent_differences`, `RandomHash.real_rules_survival_probability_toReal`, and `RandomHash.real_nonzero_test_probability_toReal` | For any fixed finite family of rationally independent integer vectors, the actual hash with independent uniform real weights on [0,1) has independent uniform circle outputs. For Q >= 2, all R fixed catalogue members survive with probability (2/Q)^R; any nonzero integer vector passes the strict norm test with probability 2/Q. Surjectivity, normalization, independence, and arc measures are derived. No primitivity or unimodularity assumption. |
 | `lem:nonsep`: The nonseparated family is thin | `NonseparatedFamily.nonseparated_family_thin` | For t >= 2, a k-unique length-n source, n >= L = 3(k+1), and Q >= 2, the actual exceptional event has probability at most 2 c_t L n^(2t-1)/Q for an explicit positive constant depending only on t. The finite partner count, reconstruction, separation-failure saving, nonzero spectrum differences, and probability union bound are derived. Partners need not be unique. The n >= L hypothesis is the paper's standing assumption, stated after equation (3) in Section 2.3. |
 | `lem:block`: Connected blocks | `ConnectedBlocks.adjoining_rule_bound` and `ConnectedBlocks.connected_block_bound` | Catalogue rules have concrete presentations by 2t bubbles with the paper's geometry and balance. Adjoining an adjacent rule increases the intrinsic component count by at most 2t-1. A nonempty rule set connected by adjacencies within that set satisfies c(B) <= (2t-1) times B.card + 1. The formal result allows t >= 1; the paper assumes t >= 2. |
@@ -29,7 +36,7 @@ of the paper only clarify the prose.
 | `lem:witness`: Bounded witness | `VerifiedConflictGraphWitness.bounded_witness` | For t >= 2, Q >= 2, an additive circle hash, and a retained vertex whose component in the actual finite conflict graph is not two-colorable, derives an independent surviving generating witness and the exact counted-set predicate, with all manuscript size and component bounds. The exceptional set, separated edge traces, odd walk, catalogue coverage, and equal-bin survival are derived. No coverage premise remains. |
 | `lem:resolve`: Counting generating sets | `ManuscriptCounting.counting_generating_sets` | The concrete catalogue grammar and path restrictions, k-unique base word, R >= 1, and signed generating condition. The bound counts underlying sets of signed vectors with their intrinsic support-component count. Independence may be imposed using `filtered_card_bound`; the unrestricted result is stronger. |
 | `prop:obstruction`: Obstructions are rare | `PaperProbability.obstructions_are_rare` | For each fixed t >= 2 and all sufficiently large n, every Q >= 8*n^(2*t-1)*L^b_t and every actual k-unique word have obstruction-event probability at most 1/12. The event requires that the word is a retained graph vertex and its actual component is not two-colorable. Candidate finiteness and counts, exact survival probabilities, the geometric tail, and all logarithmic-parameter side conditions are derived; no conditioning on the random graph. |
-| `thm:main`: Optimal redundancy bound | `OptimalRedundancy.main`, with `CodeExistence.main` and `CodeExistence.eventually_exists_code` | For each fixed t >= 2, a constant K depending only on t bounds optimal redundancy by (2*t-1)*log_2(n) + K*log_2(log_2(n)) for all sufficiently large n. The optimum is the attained maximum cardinality over actual correcting subsets of the n-bit word space, with its minimum-redundancy interpretation proved. The code-existence form produces nonempty finite codes correcting at most t genuine insertions/deletions in total, with explicit K = 6*b_t+6 and b_t = 4*a_t+2. No large-code, probability, or asymptotic side condition is an input to these final theorems. |
+| `thm:main`: Optimal redundancy bound | `OptimalRedundancy.main`, with `CodeExistence.main` and `CodeExistence.eventually_exists_code` | For each fixed t >= 2, a constant K depending only on t bounds optimal redundancy by (2*t-1)*log_2(n) + K*log_2(log_2(n)) for all sufficiently large n. The optimum is the attained maximum cardinality over actual correcting subsets of the n-bit word space, with its minimum-redundancy interpretation proved. The code-existence form produces nonempty finite codes correcting at most t genuine insertions, deletions and substitutions in total, with explicit K = 6*b_t+6 and b_t = 4*a_t+2. No large-code, probability, or asymptotic side condition is an input to these final theorems. |
 
 For the unique-word family lemma, `OverlapCollision.collision_card_le`
 proves that agreeing length-k substrings at positions a < b leave at most
@@ -56,11 +63,12 @@ k-uniqueness. The descriptions and counting proofs use exactly the same
 `SignedSupport.wordSpectrum` definition as the path lemma.
 
 For rigidity, `SingleEditOrigins.Edit` implements unchanged words, deletion
-at a valid source index, and insertion at a valid gap, including both boundary
-gaps. Its `origin` map is computed from the edit: an inserted letter has no
-source index, surviving indices are injective, and in-bounds output letters
-have in-bounds source indices with the correct bits. These facts are proved
-from the edit definitions.
+at a valid source index, insertion at a valid gap, including both boundary
+gaps, and substitution at a valid source index. Its `origin` map is computed
+from the edit: an inserted or substituted letter has no source index,
+surviving indices are injective, and in-bounds output letters have in-bounds
+source indices with the correct bits. These facts are proved from the edit
+definitions.
 
 `TwoEditWindows.exists_clean_block_among_three` proves that one of the
 length-k blocks starting at offsets 0, k+1, or 2(k+1) avoids both edit cuts
@@ -72,8 +80,8 @@ for a specially chosen origin labelling. Source-index injectivity then gives
 `EditRigidity.one_edit_unique`.
 
 `SingleEditScripts.within_one_realized` classifies a genuine list edit script
-of total cost at most one as unchanged, one deletion, or one insertion at its
-actual list split. It derives a valid concrete edit, the exact output length,
+of total cost at most one as unchanged, one deletion, one insertion, or one
+substitution at its actual list split. It derives a valid concrete edit, the exact output length,
 and equality of the complete padded letter functions. Consequently
 `ScriptRigidity.shared_source_letters` and `ScriptRigidity.within_one_unique`
 apply directly to actual scripts. The further Boolean-spectrum and simple
@@ -118,6 +126,9 @@ Its local constructions and geometric arguments are as follows.
   exterior words from a k-unique source and an edit at least 4L from both
   boundaries. The exact source and target concatenations are conclusions.
   The local word's location relative to the actual edit is also bounded.
+  `exists_substitution_bubble` constructs the substitution bubble, whose run
+  is the replaced letter itself (rho = 1) with flanks of length L-1; it needs
+  no boundary bits and no run extraction.
 - `SpectrumLocalization.context_replacement` proves the exact spectrum
   cancellation for arbitrary exterior lists and local words with equal
   first and last L-1 letters. `BubbleLocalSpectrum` derives those equal
@@ -128,35 +139,41 @@ Its local constructions and geometric arguments are as follows.
 - `BubbleEndpoints.deletion_endpoints` and `insertion_endpoints` derive the
   displacement of equal windows from their shared surviving source letters.
   The two flank-bit mismatches then force the initial or terminal endpoint.
-  `BubblePathSimplicity` derives both simple paths from actual substring
-  realizations and source uniqueness, including all endpoint vertices.
-  `BubbleContextGeometry.context_geometry` combines these for the concrete
-  grammar inside unchanged context. Its canonical edit at the run's end
-  preserves the exact finite source and target; it does not assert that the
-  original edit position or its origin map is unchanged.
+  `substitution_endpoints` derives displacement zero and uses the flipped
+  letter itself, which lies in every other common window, so no flank bits
+  are needed. `BubblePathSimplicity` derives both simple paths from actual
+  substring realizations and source uniqueness, including all endpoint
+  vertices. `BubbleContextGeometry.context_geometry` combines these for the
+  concrete grammar inside unchanged context, in all three orientations. Its
+  canonical edit at the run's end preserves the exact finite source and
+  target; it does not assert that the original edit position or its origin
+  map is unchanged.
 - `TraceSeparation` proves monotonicity of the actual trace counters, then
   transfers matched-column gaps and boundary margins to source and target
   positions. The resulting neighborhoods are in bounds and disjoint.
   `EditLocality.origin_in_source_interval` derives containment of surviving
-  origins for local unchanged, deletion, and insertion segments. Together
+  origins for local unchanged, deletion, insertion, and substitution segments. Together
   with rigidity, `local_vertex_sets_disjoint` proves disjointness of their
   actual vertex sets, including endpoints, whenever their source intervals
   are disjoint. It assumes neither an origin map nor path disjointness.
 
-`SingleEditBubbles.deletion_bubble` and `insertion_bubble` combine these
-results for an actual edit of a k-unique finite word, assuming k >= 1 and
-4L margins at both boundaries. They construct a `LocalBubble` with the
-exact source and target concatenations, opposite flank bits, both simple
+`SingleEditBubbles.deletion_bubble`, `insertion_bubble` and
+`substitution_bubble` combine these results for an actual edit of a
+k-unique finite word, assuming k >= 1 and 4L margins at both boundaries.
+They construct a `LocalBubble` with the exact source and target
+concatenations, opposite flank bits for a deletion or insertion, both simple
 paths, endpoint-only intersections, and the actual signed spectrum change.
-The insertion theorem also proves that the bubble bit is the inserted bit.
+The insertion theorem also proves that the bubble bit is the inserted bit,
+and the substitution theorem that it is the replaced source bit.
 `LocalBubble.source_interval_in_neighborhood` puts each constructed source
 interval inside its prescribed edit neighborhood;
 `source_intervals_disjoint_of_trace` derives disjointness for any pair at
 distinct edit columns of a separated trace.
 
 `TraceEditData.EditColumn` consists exactly of the trace's edit-column
-indices. Its deletion and insertion subtype cardinalities equal the actual
-trace counters; `editEquiv` derives the Fin (2*t) enumeration. `TraceBubbleFamily`
+indices. Its deletion, insertion and substitution subtype cardinalities
+equal the actual trace counters; `editEquiv` derives the Fin (2*t)
+enumeration from d = i and 2d + s = 2t. `TraceBubbleFamily`
 constructs one bubble at each index, with its actual isolated target and
 orientation in the type. `LocalBubbleDisjoint.localVertex_ne_of_trace`
 derives pairwise disjointness for either side, including every endpoint,
@@ -174,8 +191,9 @@ This identity needs no uniqueness or assumed cancellation.
 `BubbleCatalogue` identifies actual local-word spectra with path spectra and
 converts the proved geometry to the exact finite index ranges in
 `ValidCatalogue`. `SeparatedTraceCoverage.catalogueRule` reindexes the signed
-sum, applies every local spectrum identity, and supplies the derived t/t
-balance and disjointness. Finally,
+sum, applies every local spectrum identity, and supplies the derived balance
+(d deletion bubbles, d insertion bubbles, 2t-2d substitution bubbles) and
+disjointness. Finally,
 `VerifiedConflictGraphWitness.separated_coverage` converts finite bit words
 and handles k = 0: uniqueness forces an empty word, hence t = 0 and the
 empty catalogue. This proves the existing coverage interface without changing it.
@@ -189,7 +207,7 @@ to a specified surviving set K. The walk's length is unrestricted. The theorem
 constructs an actual finite rule set U with rational independence, a generating
 order at the initial vector, catalogue membership, survival, and
 
-    2 <= U.card <= 1 + 4*t*L^2,
+    2 <= U.card <= 1 + 4*t*L^2 + 2*t*L,
     c(U) <= (2*t-1)*U.card + 1,
     U.card <= L implies c(U) <= (2*t-1)*U.card.
 
@@ -255,16 +273,19 @@ The graph, exceptional set, odd walk, and deterministic hash-survival test
 are now defined and proved rather than supplied as additional interfaces:
 
 - `AlignmentTrace.alignment_iff_exists_trace` connects the checked alignment
-  proposition to computational matched/deletion/insertion columns, with exact
-  source and target words and edit counts. Matched-column anchors count the
-  actual preceding prefix; the right boundary anchor is n-d for a length-n
-  source and d deletions.
+  proposition to computational matched/deletion/insertion/substitution
+  columns, with exact source and target words and edit counts. A
+  substitution column holds the source bit; its target bit is the negation.
+  Matched-column anchors count the actual preceding prefix; the right
+  boundary anchor is n-d-s for a length-n source with d deletions and s
+  substitutions.
 - `FiniteConflictGraph` uses finite n-bit words, k-uniqueness, genuine
   edit-script confusability, and equal labels. Its exceptional set quantifies
   over every distinct equal-label n-bit partner, without requiring that partner
-  to be unique or retained. A bad trace either has fewer than t edits of each kind
-  or has t of each and fails separation. `edge_separated_trace` derives an
-  actual trace with t deletions and t insertions, at least 4L matched columns
+  to be unique or retained. A bad trace has equally many deletions and
+  insertions and either fewer than 2t edits or exactly 2t edits and a failure
+  of separation. `edge_separated_trace` derives an actual trace with d
+  deletions, d insertions and 2t-2d substitutions, at least 4L matched columns
   strictly between edits, and at least 4L between each edit and either boundary.
 - `OddGraphWalk.component_odd_walk` derives a finite odd closed walk based at
   the specified vertex from non-two-colorability of its own component.
@@ -330,16 +351,18 @@ Zero-edit traces have equal source and target and cannot witness an exceptional 
 `CloseAnchorCount.bad_card_le` counts r-tuples with an anchor near a boundary
 or another anchor by omitting the constrained coordinate and reconstructing it
 from at most 2B possibilities. Its bound is r(r+2)(2B)n^(r-1), including empty
-parameter cases. `TaggedAnchorCount` adds the finite orientation/bit alphabet.
-Using four tags per edit overcounts the paper's more economical records but
-changes only the constant depending on t.
+parameter cases. `TaggedAnchorCount` adds the finite tag alphabet: the four
+tags of a packet encode a deletion, a substitution, or an insertion with its
+bit. `AnchorRecords.decode_encode` proves that the source and the record
+reconstruct the target.
 
 `ExceptionalPartnerCount.candidatePartners_covered` derives the finite cover
-from actual bad alignment traces. It converts negated matched-column separation
-into the counted anchor conditions, with right boundary n-t. The decoder image
-counts each partner once even when several records produce it. The resulting
-bound is `c_t L n^(2t-1)`, with
-`c_t = (t + 8*(2*t)*(2*t+2))*4^(2*t)`.
+from actual bad alignment traces. A trace with d deletions, d insertions and
+s substitutions has a record of 2d+s packets; short records have fewer than
+2t packets, and a full record fails separation with right boundary
+n-(2t-d), one of t+1 values. The decoder image counts each partner once even
+when several records produce it. The resulting bound is `c_t L n^(2t-1)`,
+with `c_t = (2*t + 8*(t+1)*(2*t)*(2*t+2))*4^(2*t)`.
 
 `ExceptionalProbability` removes hash labels to define a fixed finite partner
 set. Source uniqueness and n >= L make every distinct partner's spectrum
@@ -363,7 +386,7 @@ Its bound is
 `ObstructionProbability.obstructionEvent` is exactly the existence of a retained
 vertex with the specified underlying word and a component that is not
 two-colorable. `VerifiedConflictGraphWitness.bounded_witness` covers this event
-by survival tests for the fixed candidates, for 2 <= R <= 1+4*t*L^2.
+by survival tests for the fixed candidates, for 2 <= R <= 1+4*t*L^2+2*t*L.
 The verified random-hash law gives probability (2/Q)^R for each independent
 set. Finite union bounds apply without requiring independence between candidates
 or conditioning on the random graph or exceptional set.
@@ -371,7 +394,7 @@ or conditioning on the random graph or exceptional set.
 `WitnessCost` uses the explicit `b_t = 4*a_t+2`, where
 `a_t = 100*t*(32*t+17)`, to absorb the description factors into L^(b_t*R).
 `ObstructionBound` then bounds each size contribution by 4^(-R) and proves
-the finite geometric-tail bound 1/12. `PaperParameters` derives L >= 4*t+2
+the finite geometric-tail bound 1/12. `PaperParameters` derives L >= 4*t+3
 eventually and n <= 2^R whenever L < R for the actual logarithmic parameter.
 `PaperProbability.obstructions_are_rare` therefore proves the entire
 proposition with only fixed t >= 2, sufficiently large n, the stated lower
@@ -435,3 +458,45 @@ final optimal-redundancy theorem. It does not certify every narrative statement,
 historical comparison, or related-literature claim in the paper. The final
 code selection is an existence proof, with no efficient encoder or decoder
 asserted.
+
+## The edit model
+
+The formalization proves the paper's theorem for codes correcting t edits,
+where an edit is a single insertion, deletion or substitution, and
+`EditAlignment.WithinEdits t` bounds the total number of edits. The
+extension follows the transfer argument of the companion note: two words of
+length n confusable under t edits each are joined by an alignment with d
+deletions, d insertions and s substitutions, where 2d + s <= 2t, so an
+alignment column of cost 2t still consists of 2t local replacements, and
+each replacement is a bubble of the catalogue. What changes in the proof:
+
+- `HeaderRecovery.Orientation` has a third constructor, `substitution`. A
+  substitution header has rho = 1 (`CatalogueWords.BubbleWord.sub_rho`),
+  its two words are A d B and A (1-d) B with flanks of length L-1
+  (`BubbleWord.flipWord`), both of length 2L-1, and its positive path is
+  obtained by `Windows.flipAt` at the edit offset L-1.
+- `SingleEditOrigins.Edit.substitute` has origin `none` at the substituted
+  position and the identity elsewhere. Rigidity, uniqueness after one edit,
+  and the locality of origins are proved for it with the same clean-block
+  argument.
+- `EditAlignment.equal_length_confusability` is proved by induction on the
+  script rather than through a common subsequence, which the substitution
+  case requires.
+- The substitution bubble needs no boundary bits: displacement zero follows
+  from rigidity, and the flipped letter lies in every common window other
+  than the two endpoint windows (`BubbleEndpoints.substitution_endpoints`).
+  `CatalogueBridge.ValidCatalogue.boundary` is therefore conditional on the
+  orientation, and `OrientationBalanced` requires equally many deletion and
+  insertion bubbles and 2t bubbles in all.
+- Each bubble names at most 2L+1 path vertices instead of 2L, so the witness
+  cutoff is 1 + 4tL^2 + 2tL instead of 1 + 4tL^2, and the threshold L >= 4t+3
+  replaces L >= 4t+2. The header code uses `Fin (6L)` instead of `Fin (4L)`,
+  which the field bound 16L(nu+1) absorbs, so the counting exponent a_t and
+  the final constant K are unchanged.
+- Records of nonseparated alignments have 2d+s packets; the exceptional
+  constant c_t grows as stated above, and the bound c_t L n^(2t-1) keeps its
+  power of n.
+
+The final statement `OptimalRedundancy.main` is unchanged in form; its
+definition of a correcting code, `CodeSelection.Corrects`, now refers to t
+edits of the three kinds.

@@ -26,6 +26,7 @@ def canonicalEdit (p : LocalBubble k source target pos orientation) : Bool → E
   | true => match p.bubble.orientation with
     | .deletion => .delete (p.before.length + editOffset k)
     | .insertion => .insert (p.before.length + editOffset k) p.bubble.bit
+    | .substitution => .substitute (p.before.length + editOffset k)
 
 def localVertex (p : LocalBubble k source target pos orientation) (side : Bool)
     (offset : ℕ) : SupportComponents.Vertex (windowLength k) :=
@@ -64,6 +65,8 @@ theorem canonical_length (p : LocalBubble k source target pos orientation) (side
   | false => rfl
   | true =>
     have hlength := lengths p.bubble
+    have hflip := p.bubble.flipWord_length
+    have hlong := p.bubble.longWord_length
     cases ho : p.bubble.orientation <;>
       simp only [pathWord, ite_true, canonicalEdit, ho,
         BubbleWord.positiveWord, BubbleWord.negativeWord, Edit.outputLength] <;> omega
@@ -92,6 +95,10 @@ theorem canonical_word (p : LocalBubble k source target pos orientation) (side :
           simpa only [pathWord, ite_true, canonicalEdit, ho,
             BubbleWord.negativeWord, BubbleWord.positiveWord, Edit.word] using
             insert_context p.bubble p.before p.after
+        | substitution =>
+          simpa only [pathWord, ite_true, canonicalEdit, ho,
+            BubbleWord.negativeWord, BubbleWord.positiveWord, Edit.word] using
+            flip_context p.bubble p.before p.after
 
 /-- Every bounded actual bubble vertex belongs to the corresponding local
 output vertex set of the canonical edit in source coordinates. -/

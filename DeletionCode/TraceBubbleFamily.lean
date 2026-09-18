@@ -31,13 +31,25 @@ theorem exists_bubbleAt (trace : Trace) (k : ℕ)
     (hsep : Separated (4 * windowLength k) trace) (c : EditColumn trace) :
     Nonempty (BubbleAt trace k c) := by
   have hm := position_margins trace k hsep c
-  rcases column_cases trace c with ⟨b, hc⟩ | ⟨b, hc⟩
+  rcases column_cases trace c with ⟨b, hc⟩ | ⟨b, hc⟩ | ⟨b, hc⟩
   · unfold BubbleAt
     rw [orientation_of_deletion trace c b hc, oneEditTarget_of_deletion trace c b hc]
     exact exists_deletion_bubble trace.source (position trace c) k hx hm.1 hm.2
   · unfold BubbleAt
     rw [orientation_of_insertion trace c b hc, oneEditTarget_of_insertion trace c b hc]
     obtain ⟨p, _⟩ := exists_insertion_bubble trace.source (position trace c) k b hx hm.1 hm.2
+    exact ⟨p⟩
+  · unfold BubbleAt
+    rw [orientation_of_substitution trace c b hc, oneEditTarget_substitution_split trace c b hc]
+    have hsrc := source_split_of_substitution trace c b hc
+    have hm1 : 4 * windowLength k ≤ (sourcePrefix trace c).length := hm.1
+    have hm2 : (sourcePrefix trace c).length + 4 * windowLength k ≤
+        (sourcePrefix trace c ++ b :: sourceSuffix trace c).length := by
+      rw [← hsrc]
+      exact hm.2
+    rw [position_eq_sourcePrefix_length, hsrc]
+    obtain ⟨p, _⟩ := exists_substitution_bubble (sourcePrefix trace c) (sourceSuffix trace c)
+      b k hm1 hm2
     exact ⟨p⟩
 
 noncomputable def bubbleAt (trace : Trace) (k : ℕ)
@@ -75,16 +87,18 @@ noncomputable def bubbleWords (trace : Trace) (k : ℕ)
 noncomputable def indexedBubbleWords (trace : Trace) (k t : ℕ)
     (hx : KUnique (listLetters trace.source) trace.source.length k)
     (hsep : Separated (4 * windowLength k) trace)
-    (hdel : trace.deletions = t) (hins : trace.insertions = t) : Fin (2 * t) → BubbleWord k :=
-  fun i => bubbleWords trace k hx hsep (editEquiv trace t hdel hins i)
+    (hbal : trace.deletions = trace.insertions)
+    (hsum : 2 * trace.deletions + trace.substitutions = 2 * t) : Fin (2 * t) → BubbleWord k :=
+  fun i => bubbleWords trace k hx hsep (editEquiv trace t hbal hsum i)
 
 theorem indexedBubbleWords_orientation (trace : Trace) (k t : ℕ)
     (hx : KUnique (listLetters trace.source) trace.source.length k)
     (hsep : Separated (4 * windowLength k) trace)
-    (hdel : trace.deletions = t) (hins : trace.insertions = t) (i : Fin (2 * t)) :
-    (indexedBubbleWords trace k t hx hsep hdel hins i).orientation =
-      orientation trace (editEquiv trace t hdel hins i) :=
-  bubbleAt_orientation trace k hx hsep (editEquiv trace t hdel hins i)
+    (hbal : trace.deletions = trace.insertions)
+    (hsum : 2 * trace.deletions + trace.substitutions = 2 * t) (i : Fin (2 * t)) :
+    (indexedBubbleWords trace k t hx hsep hbal hsum i).orientation =
+      orientation trace (editEquiv trace t hbal hsum i) :=
+  bubbleAt_orientation trace k hx hsep (editEquiv trace t hbal hsum i)
 
 #print axioms position_margins
 #print axioms exists_bubbleAt

@@ -56,6 +56,8 @@ theorem hybrid_increment_of_not_edit (trace : Trace) (i : Fin trace.length)
     exact False.elim (hnot (by simp only [EditIndex, hc, Column.isEdit]))
   | insertion bit =>
     exact False.elim (hnot (by simp only [EditIndex, hc, Column.isEdit]))
+  | substitution bit =>
+    exact False.elim (hnot (by simp only [EditIndex, hc, Column.isEdit]))
 
 /-- A separated edit's hybrid increment equals its actual isolated edit
 on the original source. The common suffix is derived from the trace. -/
@@ -66,7 +68,7 @@ theorem hybrid_increment_of_edit {trace : Trace} {L : ℕ} (hL : 1 ≤ L)
   obtain ⟨a, b, common, hs, ht, hcommon⟩ := common_suffix_before_edit hL hsep c.val c.property
   change sourcePrefix trace c = a ++ common at hs
   change targetPrefix trace c = b ++ common at ht
-  rcases column_cases trace c with ⟨bit, hc⟩ | ⟨bit, hc⟩
+  rcases column_cases trace c with ⟨bit, hc⟩ | ⟨bit, hc⟩ | ⟨bit, hc⟩
   · have hc' : trace.get c.val = .deletion bit := hc
     have hbefore : hybrid trace c.val.val = targetPrefix trace c ++ bit :: sourceSuffix trace c := by
       simpa only [targetPrefix, sourceSuffix, hc', Trace.source, List.singleton_append] using
@@ -89,6 +91,18 @@ theorem hybrid_increment_of_edit {trace : Trace} {L : ℕ} (hL : 1 ≤ L)
       source_split_of_insertion trace c bit hc, hs, ht]
     exact common_suffix_change a b common (sourceSuffix trace c)
       (bit :: sourceSuffix trace c) L hL hcommon g
+  · have hc' : trace.get c.val = .substitution bit := hc
+    have hbefore : hybrid trace c.val.val = targetPrefix trace c ++ bit :: sourceSuffix trace c := by
+      simpa only [targetPrefix, sourceSuffix, hc', Trace.source, List.singleton_append] using
+        hybrid_before trace c.val
+    have hafter : hybrid trace (c.val.val + 1) =
+        targetPrefix trace c ++ (!bit) :: sourceSuffix trace c := by
+      simpa only [targetPrefix, sourceSuffix, hc', Trace.target, List.append_assoc,
+        List.singleton_append] using hybrid_after trace c.val
+    rw [hbefore, hafter, oneEditTarget_substitution_split trace c bit hc,
+      source_split_of_substitution trace c bit hc, hs, ht]
+    exact common_suffix_change a b common (bit :: sourceSuffix trace c)
+      ((!bit) :: sourceSuffix trace c) L hL hcommon g
 
 /-- Exact telescoping over every actual column; no separation is needed yet. -/
 theorem hybrid_telescope (trace : Trace) (L : ℕ) (g : Gram L) :
@@ -101,7 +115,7 @@ theorem hybrid_telescope (trace : Trace) (L : ℕ) (g : Gram L) :
     (Finset.sum_range_sub (fun i => spectrum (hybrid trace i) L g) trace.length).symm
 
 /-- The full trace's spectrum difference is the sum of isolated edit
-differences, indexed by its actual deletion and insertion columns. -/
+differences, indexed by its actual deletion, insertion and substitution columns. -/
 theorem spectrum_sum_apply {trace : Trace} {L : ℕ} (hL : 1 ≤ L)
     (hsep : Separated (4 * L) trace) (g : Gram L) :
     spectrum trace.target L g - spectrum trace.source L g =

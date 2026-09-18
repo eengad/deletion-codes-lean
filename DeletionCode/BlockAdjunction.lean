@@ -143,7 +143,8 @@ theorem blockOf_insert_eq {k : ℕ} (U : RuleSet k)
 theorem new_block_card_bound {t k : ℕ} (U : RuleSet k)
     (w : Gram (windowLength k) → ℤ) (hw : CatalogueRule t k w)
     (hsize : ∀ B ∈ blocks U, B.card ≤ windowLength k) :
-    (blockOf (insert w U) w).card ≤ 1 + 4 * t * (windowLength k) ^ 2 := by
+    (blockOf (insert w U) w).card ≤
+      1 + 4 * t * (windowLength k) ^ 2 + 2 * t * windowLength k := by
   rw [blockOf_insert_eq]
   exact attached_blocks_union_bound U w t (windowLength k) hsize
     (CatalogueVertexBound.catalogue_vertex_card_le w hw)

@@ -11,7 +11,9 @@ A Lean 4 formalization of the main theorem of
 The paper proves that binary codes of length n correcting t >= 2 deletions
 exist with redundancy (2t-1) log2 n + O_t(log2 log2 n), improving the leading
 coefficient 2t of Levenshtein's 1965 bound. This repository checks that proof
-in Lean, from the definitions of words and edits up to the final bound.
+in Lean, from the definitions of words and edits up to the final bound, and
+checks it for the stronger edit model: the codes correct any t edits, where
+an edit is a single insertion, deletion or substitution.
 
 ## The theorem
 
@@ -27,10 +29,12 @@ Here `optimalRedundancy t n = n - log2 (optimalCodeSize t n)`, and
 `optimalCodeSize t n` is the maximum cardinality over all subsets of the
 n-bit words in which no two distinct words are confusable. Two words are
 confusable when some output can be reached from each of them by at most t
-single insertions and deletions in total (`EditAlignment.Script`,
-`EditAlignment.WithinEdits`, `FiniteConflictGraph.Confusable`,
-`CodeSelection.Corrects`). This is at least as strong as correcting t
-deletions. The constant is explicit, with no attempt at optimisation:
+single insertions, deletions and substitutions in total
+(`EditAlignment.Script`, `EditAlignment.WithinEdits`,
+`FiniteConflictGraph.Confusable`, `CodeSelection.Corrects`). This is at
+least as strong as correcting t deletions, and at least as strong as
+correcting t insertions and deletions. The constant is explicit, with no
+attempt at optimisation:
 K = 6 b_t + 6, where b_t = 4 a_t + 2 (`WitnessCost.exponent`) and
 a_t = 100 t (32 t + 17) is the exponent in the count of Lemma 5.1
 (`CountExponent.exponent`). The result is an existence statement; no encoder
@@ -68,9 +72,10 @@ Where a formal statement is not word for word the paper's, it is the more
 general one: it drops a hypothesis that the proof turned out not to need, so
 the paper's statement follows as a special case. For example, Lemma 4.5 is
 proved without the side condition |I| >= 2, Lemma 4.4 for every t >= 1, and
-the final theorem for t insertions and deletions in total rather than
-deletions only. [VERIFIED_LEMMAS.md](VERIFIED_LEMMAS.md) gives the exact
-hypotheses of every row.
+the final theorem for t insertions, deletions and substitutions in total
+rather than deletions only. [VERIFIED_LEMMAS.md](VERIFIED_LEMMAS.md) gives
+the exact hypotheses of every row, and its last section lists what the edit
+model changes in the proof.
 
 ## What is not checked
 

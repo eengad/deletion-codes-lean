@@ -132,8 +132,8 @@ noncomputable def presentationOfCatalogue {t k R : ℕ}
     (Classical.choose_spec (hcat r)).2.2
   refine ⟨words, ?_, ?_, ?_⟩
   · refine ⟨?_, ?_, ?_, ?_⟩
-    · intro b
-      exact (hvalid (group t R b)).boundary (indexEquiv t R b).2
+    · intro b hsub
+      exact (hvalid (group t R b)).boundary (indexEquiv t R b).2 hsub
     · intro b side
       exact (hvalid (group t R b)).simple (indexEquiv t R b).2 side
     · intro b i j hi hj heq
@@ -161,9 +161,9 @@ noncomputable def presentationOfCatalogue {t k R : ℕ}
       simpa only [flat_vertex_eq, hgroup, singleFamily] using hd
   · intro r
     constructor
-    · rw [orientation_count]
+    · rw [orientation_count, orientation_count]
       simpa using (hbalanced r (0 : Fin 1)).1
-    · rw [orientation_count]
+    · rw [orientation_count, orientation_count]
       simpa using (hbalanced r (0 : Fin 1)).2
   · intro r
     calc

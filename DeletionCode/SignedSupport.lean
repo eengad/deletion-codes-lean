@@ -74,7 +74,7 @@ structure BubbleGeometry {B : Type*} (F : Family B) (L : ℕ) : Prop where
   endpoints : ∀ b i j, i ≤ F.extra b false + 1 → j ≤ F.extra b true + 1 →
     SupportComponents.vertex F L b false i = SupportComponents.vertex F L b true j →
       (i = 0 ∧ j = 0) ∨ (i = F.extra b false + 1 ∧ j = F.extra b true + 1)
-  differentLengths : ∀ b, F.extra b false ≠ F.extra b true
+  notBothSingle : ∀ b, F.extra b false ≠ 0 ∨ F.extra b true ≠ 0
 
 theorem gram_injective_of_simple {B : Type*} (F : Family B) (L : ℕ)
     (H : BubbleGeometry F L) (b : B) (side : Bool) :
@@ -88,7 +88,7 @@ theorem gram_injective_of_simple {B : Type*} (F : Family B) (L : ℕ)
   exact Fin.ext (congrArg (fun z : Fin (F.extra b side + 2) => z.val) hindices)
 
 /-- A shared edge would force both paths to consist of the same single edge,
-contradicting their unequal lengths. -/
+which the geometry excludes. -/
 theorem no_common_bubble_gram {B : Type*} (F : Family B) (L : ℕ)
     (H : BubbleGeometry F L) (b : B) (g : Gram L)
     (hn : g ∈ windowSet (F.path b false) L (F.extra b false))
@@ -113,7 +113,9 @@ theorem no_common_bubble_gram {B : Type*} (F : Family B) (L : ℕ)
     (gram_eq_target_vertices F L b b false true i.val j.val he)
   rcases ht with ⟨hzero, _⟩ | ⟨hEndN, hEndP⟩
   · omega
-  · exact H.differentLengths b (by omega)
+  · rcases H.notBothSingle b with hne | hne
+    · exact hne (by omega)
+    · exact hne (by omega)
 
 theorem pathSpectrum_eq_one (p : Letters) (L D : ℕ) (g : Gram L)
     (hinj : Function.Injective (fun i : Fin (D + 1) => gram p L i.val))
