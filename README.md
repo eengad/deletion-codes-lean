@@ -5,8 +5,8 @@
 A Lean 4 formalization of the main theorem of
 
 > Eyal En Gad, *Polynomially larger deletion codes by linear hashing of
-> substring counts*, arXiv preprint, submitted 16 September 2026
-> (identifier pending).
+> substring counts*, [arXiv:2609.19493](https://arxiv.org/abs/2609.19493),
+> 2026.
 
 The paper proves that binary codes of length n correcting t >= 2 deletions
 exist with redundancy (2t-1) log2 n + O_t(log2 log2 n), improving the leading
