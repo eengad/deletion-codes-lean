@@ -11,9 +11,7 @@ A Lean 4 formalization of the main theorem of
 The paper proves that binary codes of length n correcting t >= 2 deletions
 exist with redundancy (2t-1) log2 n + O_t(log2 log2 n), improving the leading
 coefficient 2t of Levenshtein's 1965 bound. This repository checks that proof
-in Lean, from the definitions of words and edits up to the final bound, and
-checks it for the stronger edit model: the codes correct any t edits, where
-an edit is a single insertion, deletion or substitution.
+in Lean, from the definitions of words and edits up to the final bound.
 
 ## The theorem
 
@@ -29,12 +27,10 @@ Here `optimalRedundancy t n = n - log2 (optimalCodeSize t n)`, and
 `optimalCodeSize t n` is the maximum cardinality over all subsets of the
 n-bit words in which no two distinct words are confusable. Two words are
 confusable when some output can be reached from each of them by at most t
-single insertions, deletions and substitutions in total
-(`EditAlignment.Script`, `EditAlignment.WithinEdits`,
-`FiniteConflictGraph.Confusable`, `CodeSelection.Corrects`). This is at
-least as strong as correcting t deletions, and at least as strong as
-correcting t insertions and deletions. The constant is explicit, with no
-attempt at optimisation:
+single insertions and deletions in total (`EditAlignment.Script`,
+`EditAlignment.WithinEdits`, `FiniteConflictGraph.Confusable`,
+`CodeSelection.Corrects`). This is at least as strong as correcting t
+deletions. The constant is explicit, with no attempt at optimisation:
 K = 6 b_t + 6, where b_t = 4 a_t + 2 (`WitnessCost.exponent`) and
 a_t = 100 t (32 t + 17) is the exponent in the count of Lemma 5.1
 (`CountExponent.exponent`). The result is an existence statement; no encoder
@@ -68,17 +64,13 @@ lake build
 | Proposition 6.1, obstructions are rare | `PaperProbability.obstructions_are_rare` |
 | Theorems 1.1 and 6.2 | `OptimalRedundancy.main`, with `CodeExistence.main` and `CodeExistence.eventually_exists_code` |
 
-The table maps the paper's proof to the current generalization to edits.
-The [insertion/deletion formalization at revision 0466b6f](https://github.com/eengad/deletion-codes-lean/tree/0466b6f4bf5f6cccaba783b9a035a9953005b4c1)
-preserves the exact manuscript correspondence before this extension.
-Some current results drop unused assumptions, such as independence and
-generation in Lemma 4.5, or allow t >= 1 in Lemma 4.4. The edit extension
-also changes internal constants: its witness cutoff is 1 + 4tL^2 + 2tL,
-compared with 1 + 4tL^2 in the manuscript, and its large-window threshold
-is L >= 4t+3. Thus not every internal statement is a literal generalization
-with the same numerical bound. The final redundancy coefficient and
-remainder order are unchanged. [VERIFIED_LEMMAS.md](VERIFIED_LEMMAS.md)
-gives the current hypotheses and the details of the edit model.
+Where a formal statement is not word for word the paper's, it is the more
+general one: it drops a hypothesis that the proof turned out not to need, so
+the paper's statement follows as a special case. For example, Lemma 4.5 is
+proved without the side condition |I| >= 2, Lemma 4.4 for every t >= 1, and
+the final theorem for t insertions and deletions in total rather than
+deletions only. [VERIFIED_LEMMAS.md](VERIFIED_LEMMAS.md) gives the exact
+hypotheses of every row.
 
 ## What is not checked
 

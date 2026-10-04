@@ -15,7 +15,6 @@ open Windows
 inductive Orientation where
   | deletion
   | insertion
-  | substitution
   deriving DecidableEq
 
 structure Header where
@@ -35,25 +34,21 @@ def negativePath (k : ℕ) (h : Header) (long : Letters) : Letters :=
   match h.orientation with
   | .deletion => long
   | .insertion => deleteAt long (editOffset k)
-  | .substitution => long
 
 def positivePath (k : ℕ) (h : Header) (long : Letters) : Letters :=
   match h.orientation with
   | .deletion => deleteAt long (editOffset k)
   | .insertion => long
-  | .substitution => flipAt long (editOffset k)
 
 def negativeLength (k : ℕ) (h : Header) : ℕ :=
   match h.orientation with
   | .deletion => longLength k h
   | .insertion => shortLength k h
-  | .substitution => longLength k h
 
 def positiveLength (k : ℕ) (h : Header) : ℕ :=
   match h.orientation with
   | .deletion => shortLength k h
   | .insertion => longLength k h
-  | .substitution => longLength k h
 
 def negativeExtra (k : ℕ) (h : Header) : ℕ := negativeLength k h - windowLength k
 
@@ -76,7 +71,6 @@ def rebuildPositive (k : ℕ) (h : Header) (negative : Letters) : Letters :=
   match h.orientation with
   | .deletion => deleteAt negative (editOffset k)
   | .insertion => insertAt negative (editOffset k) h.bit
-  | .substitution => flipAt negative (editOffset k)
 
 theorem rebuild_positive_correct (k : ℕ) (h : Header) (long : Letters)
     (hbit : long (editOffset k) = h.bit) :
@@ -87,7 +81,6 @@ theorem rebuild_positive_correct (k : ℕ) (h : Header) (long : Letters)
     simp only [rebuildPositive, negativePath, positivePath, ho]
     rw [← hbit]
     exact insert_delete long (editOffset k)
-  | substitution => simp only [rebuildPositive, negativePath, positivePath, ho]
 
 /-- Rebuilding depends only on the finite negative word, not its unused tail. -/
 theorem rebuild_positive_preserves_agreement (k : ℕ) (h : Header) (p q : Letters)
@@ -124,16 +117,6 @@ theorem rebuild_positive_preserves_agreement (k : ℕ) (h : Header) (p q : Lette
           dsimp [editOffset, windowLength] at hleft heq
           omega
         simpa only [Nat.zero_add] using hknown (i - 1) hlt
-  | substitution =>
-    simp only [negativeLength, ho, longLength, windowLength] at hknown
-    simp only [rebuildPositive, positiveLength, ho, longLength, windowLength]
-    intro i hi
-    have hpq := hknown i hi
-    simp only [Nat.zero_add] at hpq ⊢
-    by_cases heq : i = editOffset k
-    · subst heq
-      simp [flipAt, hpq]
-    · simp [flipAt, heq, hpq]
 
 /-- Correct finite negative letters suffice to recover the entire positive word. -/
 theorem rebuild_positive_from_known_negative (k : ℕ) (h : Header)
@@ -210,24 +193,11 @@ theorem lengthen_seed_correct (p : Letters) (ell k : ℕ) (seed : Seed)
     · rfl
     · simpa only [Nat.zero_add] using hseed (i - 1) (by omega)
 
-/-- Transfer across a substitution: the same offset, with the crossed letter flipped. -/
-def flipSeedAt (ell : ℕ) (seed : Seed) : Seed :=
-  ⟨seed.offset, flipSeed ell seed.offset seed.bits⟩
-
-theorem flip_seed_correct (p : Letters) (ell k : ℕ) (seed : Seed)
-    (hseed : Agree p seed.offset seed.bits 0 k) :
-    Agree (flipAt p ell) (flipSeedAt ell seed).offset (flipSeedAt ell seed).bits 0 k := by
-  intro i hi
-  have h := hseed i hi
-  simp only [Nat.zero_add] at h ⊢
-  simp only [flipSeedAt, flipSeed, flipAt, h]
-
 /-- A positive seed is transferred to the negative path using recorded data only. -/
 def transferPositiveSeed (k : ℕ) (h : Header) (seed : Seed) (extra : Bool) : Seed :=
   match h.orientation with
   | .deletion => lengthenSeed (editOffset k) k seed h.bit
   | .insertion => shortenSeed (editOffset k) k seed extra
-  | .substitution => flipSeedAt (editOffset k) seed
 
 /-- The extra bit is constrained only when a positive-to-negative deletion crosses it. -/
 def ExtensionMatches (k : ℕ) (h : Header) (long : Letters)
@@ -259,11 +229,6 @@ theorem transfer_positive_seed_correct (k : ℕ) (h : Header) (long : Letters)
     simp only [negativePath, transferPositiveSeed, ho]
     apply shorten_seed_correct long (editOffset k) k seed extra hseed
     simpa only [ExtensionMatches, ho, negativePath, true_implies] using hextra
-  | substitution =>
-    simp only [positivePath, ho] at hseed
-    simp only [negativePath, transferPositiveSeed, ho]
-    have hresult := flip_seed_correct (flipAt long (editOffset k)) (editOffset k) k seed hseed
-    rwa [flipAt_flipAt] at hresult
 
 theorem transfer_positive_seed_in_bounds (k : ℕ) (h : Header)
     (seed : Seed) (extra : Bool)
@@ -300,10 +265,6 @@ theorem transfer_positive_seed_in_bounds (k : ℕ) (h : Header)
           ite_eq_right hafter, negativeLength, shortLength, longLength, windowLength]
         dsimp [editOffset, windowLength] at hafter
         omega
-  | substitution =>
-    simp only [positiveLength, ho, longLength, windowLength] at hbound
-    simp only [transferPositiveSeed, ho, flipSeedAt, negativeLength, longLength, windowLength]
-    omega
 
 /-- The combined letter and bounds guarantee needed for a concrete start instruction. -/
 theorem transfer_positive_seed_valid (k : ℕ) (h : Header) (long : Letters)
@@ -383,7 +344,6 @@ theorem rebuildPositiveFinite_correct (k : ℕ) (h : Header) (long : Letters)
 #print axioms rebuild_positive_from_known_negative
 #print axioms shorten_seed_correct
 #print axioms lengthen_seed_correct
-#print axioms flip_seed_correct
 #print axioms transfer_positive_seed_correct
 #print axioms transfer_positive_seed_in_bounds
 #print axioms transfer_positive_seed_valid

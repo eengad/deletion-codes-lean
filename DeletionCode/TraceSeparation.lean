@@ -35,10 +35,6 @@ theorem insertions_take_mono (trace : Trace) {i j : ℕ} (hij : i ≤ j) :
     Trace.insertions (trace.take i) ≤ Trace.insertions (trace.take j) :=
   counter_take_mono Trace.insertions Trace.insertions_append trace hij
 
-theorem substitutions_take_mono (trace : Trace) {i j : ℕ} (hij : i ≤ j) :
-    Trace.substitutions (trace.take i) ≤ Trace.substitutions (trace.take j) :=
-  counter_take_mono Trace.substitutions Trace.substitutions_append trace hij
-
 theorem matchedAnchor_mono (trace : Trace) {i j : ℕ} (hij : i ≤ j) :
     trace.matchedAnchor i ≤ trace.matchedAnchor j :=
   counter_take_mono Trace.matchedCount Trace.matchedCount_append trace hij
@@ -48,7 +44,6 @@ theorem sourcePosition_gap (trace : Trace) {i j B : ℕ} (hij : i ≤ j)
     (hgap : trace.matchedAnchor i + B ≤ trace.matchedAnchor j) :
     trace.sourcePosition i + B ≤ trace.sourcePosition j := by
   have hc := deletions_take_mono trace hij
-  have hs := substitutions_take_mono trace hij
   have hi := trace.sourcePosition_eq i
   have hj := trace.sourcePosition_eq j
   omega
@@ -58,7 +53,6 @@ theorem targetPosition_gap (trace : Trace) {i j B : ℕ} (hij : i ≤ j)
     (hgap : trace.matchedAnchor i + B ≤ trace.matchedAnchor j) :
     trace.targetPosition i + B ≤ trace.targetPosition j := by
   have hc := insertions_take_mono trace hij
-  have hs := substitutions_take_mono trace hij
   have hi := trace.targetPosition_eq i
   have hj := trace.targetPosition_eq j
   omega
@@ -82,7 +76,6 @@ theorem sourcePosition_margins {trace : Trace} {B : ℕ}
       trace.sourcePosition i.val + B ≤ trace.source.length := by
   have hm := hsep.1 i hi
   have hc := counter_take_le Trace.deletions Trace.deletions_append trace i.val
-  have hs := counter_take_le Trace.substitutions Trace.substitutions_append trace i.val
   have hp := trace.sourcePosition_eq i.val
   have hn := trace.source_length
   constructor <;> omega
@@ -94,7 +87,6 @@ theorem targetPosition_margins {trace : Trace} {B : ℕ}
       trace.targetPosition i.val + B ≤ trace.target.length := by
   have hm := hsep.1 i hi
   have hc := counter_take_le Trace.insertions Trace.insertions_append trace i.val
-  have hs := counter_take_le Trace.substitutions Trace.substitutions_append trace i.val
   have hp := trace.targetPosition_eq i.val
   have hn := trace.target_length
   constructor <;> omega
