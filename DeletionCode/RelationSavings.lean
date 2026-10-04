@@ -104,8 +104,8 @@ theorem savings_indexed (G : Fin R → Gram (windowLength k) → ℤ)
   simpa only [componentCount, Nat.card_eq_fintype_card] using hcount
 
 /-- Manuscript savings-from-a-relation lemma on the actual finite rule set.
-The statement holds even without the manuscript's independence, generation,
-and |I| ≥ 2 restrictions. All participating coefficients must be nonzero. -/
+The statement holds even without the manuscript's independence and generation
+assumptions. All participating coefficients must be nonzero. -/
 theorem savings_from_relation (I : RuleSet k)
     (hcat : ∀ u ∈ I, CatalogueRule t k u)
     (w : Gram (windowLength k) → ℤ) (hw : CatalogueRule t k w)
