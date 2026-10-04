@@ -48,6 +48,7 @@ theorem matched_projections (trace : Trace)
       exact ⟨congrArg (List.cons bit) h.1, congrArg (fun n => n + 1) h.2⟩
     | deletion bit => simp only [Column.isEdit, Bool.true_eq_false] at hcol
     | insertion bit => simp only [Column.isEdit, Bool.true_eq_false] at hcol
+    | substitution bit => simp only [Column.isEdit, Bool.true_eq_false] at hcol
 
 /-- A concrete edit-free interval of columns supplies a common suffix of
 the source and target prefixes. -/

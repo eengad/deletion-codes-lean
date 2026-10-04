@@ -19,7 +19,7 @@ open scoped BigOperators
 
 structure WitnessBounds (t k : ℕ) (U : RuleSet k) : Prop where
   size_lower : 2 ≤ U.card
-  size_upper : U.card ≤ 1 + 4 * t * (windowLength k) ^ 2
+  size_upper : U.card ≤ 1 + 4 * t * (windowLength k) ^ 2 + 2 * t * windowLength k
   components : componentCount U ≤ (2 * t - 1) * U.card + 1
   small_components : U.card ≤ windowLength k → componentCount U ≤ (2 * t - 1) * U.card
 
@@ -86,8 +86,8 @@ theorem relation_case {t k : ℕ} (ht : 2 ≤ t)
   have hc : componentCount U ≤ (2 * t - 1) * U.card :=
     RelationBlockSavings.relation_block_hull_bound ht G I hIG hI hcat w hw a ha hrel
   have hL : 1 ≤ windowLength k := by unfold windowLength; omega
-  have hquad : 2 * t * windowLength k ≤ 1 + 4 * t * (windowLength k) ^ 2 := by
-    nlinarith [Nat.mul_le_mul_left (2 * t * windowLength k) hL]
+  have hquad : 2 * t * windowLength k ≤
+      1 + 4 * t * (windowLength k) ^ 2 + 2 * t * windowLength k := by omega
   exact ⟨generating_blockHull hgen I, (fun u hu => hcat u (hUG hu)),
     (fun u hu => hK u (hUG hu)), hlow, hupper.trans hquad, hc.trans (Nat.le_succ _), fun _ => hc⟩
 

@@ -20,7 +20,7 @@ open scoped BigOperators ENNReal
 variable {n : ℕ}
 
 /-- The proved deterministic upper bound on witness size. -/
-def cutoff (t k : ℕ) : ℕ := 1 + 4 * t * (windowLength k) ^ 2
+def cutoff (t k : ℕ) : ℕ := 1 + 4 * t * (windowLength k) ^ 2 + 2 * t * windowLength k
 
 /-- All strict hash tests for one fixed finite set of rules. -/
 noncomputable def ruleTestEvent (k Q : ℕ) (U : RuleSet k) :

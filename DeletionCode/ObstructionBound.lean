@@ -17,7 +17,7 @@ def scale (t n k : ℕ) : ℕ := n ^ (2 * t - 1) * (windowLength k) ^ (WitnessCo
 theorem candidate_count_le (t : ℕ) (ht : 2 ≤ t) (x : Letters) (n k R : ℕ)
     (hR : 2 ≤ R) (hx : KUnique x n k) (hn : 1 ≤ n)
     (hbonus : windowLength k < R → n ≤ 2 ^ R)
-    (hL : 4 * t + 2 ≤ windowLength k) (hcut : R ≤ cutoff t k) :
+    (hL : 4 * t + 3 ≤ windowLength k) (hcut : R ≤ cutoff t k) :
     Nat.card {U : RuleSet k // Candidate t x n k R U} ≤ (scale t n k) ^ R := by
   calc
     _ ≤ 2 ^ R * (2 * t * R + 1) * n ^ ((2 * t - 1) * R) *
@@ -69,7 +69,7 @@ theorem geometric_tail_le (M : ℕ) :
 The actual logarithmic choice supplies hbonus, and the size threshold depends only on t. -/
 theorem obstruction_measure_le {n : ℕ} (t k Q : ℕ) (ht : 2 ≤ t) (x : Bits n)
     (hx : KUnique (padBits x) n k) (hn : 1 ≤ n)
-    (hL : 4 * t + 2 ≤ windowLength k)
+    (hL : 4 * t + 3 ≤ windowLength k)
     (hbonus : ∀ R, windowLength k < R → n ≤ 2 ^ R)
     (hQ : 8 * scale t n k ≤ Q) (hQtwo : 2 ≤ Q) :
     realWeights (Gram (windowLength k)) (obstructionEvent t k Q x) ≤

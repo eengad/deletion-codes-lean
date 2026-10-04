@@ -19,7 +19,8 @@ variable {n : ℕ} {H : Type*}
 /-- A finite word is unique when its actual n-letter padding is k-unique. -/
 def Unique (k : ℕ) (x : Bits n) : Prop := Windows.KUnique (padBits x) n k
 
-/-- Both finite words can yield the same output using at most t edits. -/
+/-- Both finite words can yield the same output using at most t edits
+(insertions, deletions and substitutions in total). -/
 def Confusable (t : ℕ) (x y : Bits n) : Prop :=
   ∃ output : List Bool,
     WithinEdits t (List.ofFn x) output ∧ WithinEdits t (List.ofFn y) output
@@ -29,7 +30,7 @@ theorem Confusable.symm {t : ℕ} {x y : Bits n} (h : Confusable t x y) :
   obtain ⟨output, hx, hy⟩ := h
   exact ⟨output, hy, hx⟩
 
-/-- An edit index selects an actual deletion or insertion column of a trace. -/
+/-- An edit index selects an actual edit column of a trace. -/
 def EditIndex (trace : Trace) (i : Fin trace.length) : Prop :=
   (trace.get i).isEdit = true
 
@@ -47,10 +48,12 @@ def Separated (B : ℕ) (trace : Trace) : Prop :=
 trace counters. The witness word need not itself lie outside this set. -/
 def Exceptional (t k : ℕ) (label : Bits n → H) (x : Bits n) : Prop :=
   Unique k x ∧ ∃ y : Bits n, x ≠ y ∧ label x = label y ∧
-    ∃ (d : ℕ) (trace : Trace),
+    ∃ trace : Trace,
       trace.source = List.ofFn x ∧ trace.target = List.ofFn y ∧
-      trace.deletions = d ∧ trace.insertions = d ∧
-      (d < t ∨ (d = t ∧ ¬ Separated (4 * windowLength k) trace))
+      trace.deletions = trace.insertions ∧
+      (2 * trace.deletions + trace.substitutions < 2 * t ∨
+        (2 * trace.deletions + trace.substitutions = 2 * t ∧
+          ¬ Separated (4 * windowLength k) trace))
 
 /-- These are finite n-bit words with the two explicit vertex conditions. -/
 def Vertex (t k : ℕ) (label : Bits n → H) :=
@@ -76,43 +79,47 @@ def graph (t k : ℕ) (label : Bits n → H) : SimpleGraph (Vertex t k label) wh
 theorem vertex_unique {t k : ℕ} {label : Bits n → H} (x : Vertex t k label) :
     Windows.KUnique (padBits x.val) n k := x.property.1
 
-/-- Excluding the exceptional set rules out both short balanced traces and
-nonseparated full-size traces. This applies to every such trace, not merely
-to one specially chosen alignment. -/
+/-- Excluding the exceptional set rules out both traces of cost below 2t and
+nonseparated traces of cost exactly 2t. This applies to every such trace, not
+merely to one specially chosen alignment. -/
 theorem nonexceptional_trace {t k : ℕ} {label : Bits n → H}
     (x : Vertex t k label) (y : Bits n)
     (hxy : x.val ≠ y) (hlabel : label x.val = label y)
-    (d : ℕ) (trace : Trace) (hd : d ≤ t)
+    (trace : Trace)
+    (hcost : 2 * trace.deletions + trace.substitutions ≤ 2 * t)
     (hsource : trace.source = List.ofFn x.val)
     (htarget : trace.target = List.ofFn y)
-    (hdel : trace.deletions = d) (hins : trace.insertions = d) :
-    trace.deletions = t ∧ trace.insertions = t ∧
+    (hbal : trace.deletions = trace.insertions) :
+    2 * trace.deletions + trace.substitutions = 2 * t ∧
       Separated (4 * windowLength k) trace := by
-  have hsmall : ¬ d < t := by
+  have hsmall : ¬ 2 * trace.deletions + trace.substitutions < 2 * t := by
     intro hlt
-    exact x.property.2 ⟨x.property.1, y, hxy, hlabel, d, trace,
-      hsource, htarget, hdel, hins, Or.inl hlt⟩
-  have hdt : d = t := by omega
+    exact x.property.2 ⟨x.property.1, y, hxy, hlabel, trace,
+      hsource, htarget, hbal, Or.inl hlt⟩
+  have hdt : 2 * trace.deletions + trace.substitutions = 2 * t := by omega
   have hsep : Separated (4 * windowLength k) trace := by
     by_contra hnot
-    exact x.property.2 ⟨x.property.1, y, hxy, hlabel, d, trace,
-      hsource, htarget, hdel, hins, Or.inr ⟨hdt, hnot⟩⟩
-  exact ⟨hdel.trans hdt, hins.trans hdt, hsep⟩
+    exact x.property.2 ⟨x.property.1, y, hxy, hlabel, trace,
+      hsource, htarget, hbal, Or.inr ⟨hdt, hnot⟩⟩
+  exact ⟨hdt, hsep⟩
 
-/-- Every oriented edge supplies a genuine separated full-size trace.
+/-- Every oriented edge supplies a genuine separated trace of cost exactly 2t.
 The exact counters and separation follow from exceptional-set exclusion. -/
 theorem edge_separated_trace {t k : ℕ} {label : Bits n → H}
     {x y : Vertex t k label} (hxy : (graph t k label).Adj x y) :
     ∃ trace : Trace,
       trace.source = List.ofFn x.val ∧ trace.target = List.ofFn y.val ∧
-      trace.deletions = t ∧ trace.insertions = t ∧
+      trace.deletions = trace.insertions ∧
+      2 * trace.deletions + trace.substitutions = 2 * t ∧
       Separated (4 * windowLength k) trace := by
   obtain ⟨output, hxout, hyout⟩ := hxy.2.1
-  obtain ⟨d, trace, hd, hs, ht, hdel, hins⟩ :=
+  obtain ⟨d, s, trace, hcost, hs, ht, hdel, hins, hsub⟩ :=
     trace_of_equal_length_confusability (List.ofFn x.val) (List.ofFn y.val)
       output n t (by simp) (by simp) hxout hyout
-  have hfull := nonexceptional_trace x y.val hxy.1 hxy.2.2 d trace hd hs ht hdel hins
-  exact ⟨trace, hs, ht, hfull⟩
+  have hbal : trace.deletions = trace.insertions := hdel.trans hins.symm
+  have hfull := nonexceptional_trace x y.val hxy.1 hxy.2.2 trace
+    (by rw [hdel, hsub]; exact hcost) hs ht hbal
+  exact ⟨trace, hs, ht, hbal, hfull⟩
 
 #print axioms nonexceptional_trace
 #print axioms edge_separated_trace

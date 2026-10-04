@@ -2,10 +2,13 @@ import DeletionCode.MaximalRuns
 
 /-!
 An interior edit determines the manuscript's local bubble word grammar.
-The maximal run is extracted from the actual word, its length is bounded
-by source uniqueness, and the two flanks are trimmed to length L-rho.
-This module proves the word and boundary-bit conditions; the catalogue's
-simple-path and intersection conditions are separate geometric obligations.
+For a deletion or insertion the maximal run is extracted from the actual
+word, its length is bounded by source uniqueness, and the two flanks are
+trimmed to length L-rho. For a substitution the run is the replaced letter
+itself (rho = 1) and the flanks have length L-1; no boundary bits are
+needed. This module proves the word and boundary-bit conditions; the
+catalogue's simple-path and intersection conditions are separate geometric
+obligations.
 -/
 
 namespace DeletionCode.RunBubbleConstruction
@@ -24,18 +27,21 @@ structure TrimmedRun (k : ℕ) (pre suffix : List Bool) (rho : ℕ)
   orientation_eq : bubble.orientation = orientation
   pre_eq : pre = before ++ bubble.left
   suffix_eq : suffix = bubble.right ++ after
-  left_boundary : bubble.left.getLast? = some (!bubble.bit)
-  right_boundary : bubble.right.head? = some (!bubble.bit)
+  left_boundary : bubble.orientation ≠ .substitution →
+    bubble.left.getLast? = some (!bubble.bit)
+  right_boundary : bubble.orientation ≠ .substitution →
+    bubble.right.head? = some (!bubble.bit)
 
 /-- The flanks are explicitly the last L-rho letters before the run and
 the first L-rho letters after it. Their existing boundary bits survive. -/
 def trimRun (k : ℕ) (pre suffix : List Bool) (rho : ℕ)
     (bit : Bool) (orientation : Orientation)
     (hrho : 1 ≤ rho) (hrho' : rho ≤ k + 1)
+    (hsub : orientation = .substitution → rho = 1)
     (hpre : windowLength k - rho ≤ pre.length)
     (hsuffix : windowLength k - rho ≤ suffix.length)
-    (hleft : pre.getLast? = some (!bit))
-    (hright : suffix.head? = some (!bit)) :
+    (hleft : orientation ≠ .substitution → pre.getLast? = some (!bit))
+    (hright : orientation ≠ .substitution → suffix.head? = some (!bit)) :
     TrimmedRun k pre suffix rho bit orientation := by
   have hflank : 0 < windowLength k - rho := by
     unfold windowLength
@@ -52,6 +58,7 @@ def trimRun (k : ℕ) (pre suffix : List Bool) (rho : ℕ)
       left_length := by simp only [List.length_drop]; omega
       right_length := by
         simp only [List.length_take, Nat.min_eq_left hsuffix]
+      sub_rho := hsub
     }
     before := pre.take (pre.length - (windowLength k - rho))
     after := suffix.drop (windowLength k - rho)
@@ -63,12 +70,14 @@ def trimRun (k : ℕ) (pre suffix : List Bool) (rho : ℕ)
     left_boundary := ?_
     right_boundary := ?_
   }
-  · change (pre.drop (pre.length - (windowLength k - rho))).getLast? = some (!bit)
+  · intro hne
+    change (pre.drop (pre.length - (windowLength k - rho))).getLast? = some (!bit)
     rw [List.getLast?_drop, ite_eq_right (by omega)]
-    exact hleft
-  · change (suffix.take (windowLength k - rho)).head? = some (!bit)
+    exact hleft hne
+  · intro hne
+    change (suffix.take (windowLength k - rho)).head? = some (!bit)
     rw [List.head?_take, ite_eq_right (by omega)]
-    exact hright
+    exact hright hne
 
 namespace TrimmedRun
 
@@ -96,6 +105,16 @@ theorem short_eq (r : TrimmedRun k pre suffix rho bit orientation) :
     _ = _ := by
       simp only [BubbleWord.shortWord, r.rho_eq, r.bit_eq, List.append_assoc]
 
+/-- With a single-letter run, replacing that letter gives the flipped word. -/
+theorem flip_eq (r : TrimmedRun k pre suffix rho bit orientation) (hrho : rho = 1) :
+    pre ++ (!bit) :: suffix = r.before ++ r.bubble.flipWord ++ r.after := by
+  calc
+    _ = (r.before ++ r.bubble.left) ++ (!bit) :: (r.bubble.right ++ r.after) :=
+      congrArg₂ (fun (p s : List Bool) => p ++ (!bit) :: s) r.pre_eq r.suffix_eq
+    _ = _ := by
+      simp only [BubbleWord.flipWord, r.rho_eq, r.bit_eq, hrho, Nat.sub_self,
+        List.replicate_zero, List.nil_append, List.append_assoc, List.cons_append]
+
 theorem before_length (r : TrimmedRun k pre suffix rho bit orientation) :
     r.before.length + (windowLength k - rho) = pre.length := by
   have h := congrArg List.length r.pre_eq
@@ -113,8 +132,10 @@ structure LocalBubble (k : ℕ) (source target : List Bool) (pos : ℕ)
   orientation_eq : bubble.orientation = orientation
   source_eq : source = before ++ bubble.negativeWord ++ after
   target_eq : target = before ++ bubble.positiveWord ++ after
-  left_boundary : bubble.left.getLast? = some (!bubble.bit)
-  right_boundary : bubble.right.head? = some (!bubble.bit)
+  left_boundary : bubble.orientation ≠ .substitution →
+    bubble.left.getLast? = some (!bubble.bit)
+  right_boundary : bubble.orientation ≠ .substitution →
+    bubble.right.head? = some (!bubble.bit)
   edit_start : before.length + bubble.left.length ≤ pos
   edit_stop : pos < before.length + windowLength k
 
@@ -186,7 +207,8 @@ theorem exists_deletion_bubble (word : List Bool) (pos k : ℕ)
       simp at hmargins
     · exact hbit
   let r := trimRun k pre suffix rho bit .deletion (by omega) (by omega)
-    hmargins.1 hmargins.2.1 hpreBit hsuffixBit
+    (fun h => Orientation.noConfusion h) hmargins.1 hmargins.2.1
+    (fun _ => hpreBit) (fun _ => hsuffixBit)
   have hshort : word.eraseIdx pos = pre ++ List.replicate (rho - 1) bit ++ suffix := by
     rw [hword]
     exact eraseIdx_in_run pre suffix rho bit pos hstart hstop
@@ -236,7 +258,8 @@ theorem exists_insertion_bubble (word : List Bool) (pos k : ℕ) (bit : Bool)
       simp at hmargins
     · exact hbit
   let r := trimRun k pre suffix rho bit .insertion (by omega) hrho'
-    hmargins.1 hmargins.2.1 hpreBit hsuffixBit
+    (fun h => Orientation.noConfusion h) hmargins.1 hmargins.2.1
+    (fun _ => hpreBit) (fun _ => hsuffixBit)
   have hbefore := r.before_length
   have hrhoL : rho ≤ windowLength k := by unfold windowLength; omega
   refine ⟨{
@@ -257,8 +280,53 @@ theorem exists_insertion_bubble (word : List Bool) (pos k : ℕ) (bit : Bool)
     omega
   · omega
 
+/-- An interior substitution has the grammar with rho = 1. The source is
+presented as prefix, replaced letter, suffix; the target carries the
+opposite letter. -/
+theorem exists_substitution_bubble (pre suffix : List Bool) (bit : Bool) (k : ℕ)
+    (hleft : 4 * windowLength k ≤ pre.length)
+    (hright : pre.length + 4 * windowLength k ≤ (pre ++ bit :: suffix).length) :
+    ∃ p : LocalBubble k (pre ++ bit :: suffix) (pre ++ (!bit) :: suffix)
+        pre.length .substitution,
+      p.bubble.bit = bit := by
+  have hlength : (pre ++ bit :: suffix).length = pre.length + 1 + suffix.length := by
+    simp only [List.length_append, List.length_cons]
+    omega
+  have hpre : windowLength k - 1 ≤ pre.length := by
+    unfold windowLength at *
+    omega
+  have hsuffix : windowLength k - 1 ≤ suffix.length := by
+    unfold windowLength at *
+    omega
+  let r := trimRun k pre suffix 1 bit .substitution (Nat.le_refl 1) (by omega)
+    (fun _ => rfl) hpre hsuffix (fun h => absurd rfl h) (fun h => absurd rfl h)
+  have hword : pre ++ bit :: suffix = pre ++ List.replicate 1 bit ++ suffix := by
+    simp
+  have hbefore := r.before_length
+  have hL : 1 ≤ windowLength k := by
+    unfold windowLength
+    omega
+  refine ⟨{
+    bubble := r.bubble
+    before := r.before
+    after := r.after
+    orientation_eq := r.orientation_eq
+    source_eq := ?_
+    target_eq := ?_
+    left_boundary := r.left_boundary
+    right_boundary := r.right_boundary
+    edit_start := ?_
+    edit_stop := ?_
+  }, r.bit_eq⟩
+  · simpa only [BubbleWord.negativeWord, r.orientation_eq] using hword.trans r.long_eq
+  · simpa only [BubbleWord.positiveWord, r.orientation_eq] using r.flip_eq rfl
+  · rw [r.bubble.left_length, r.rho_eq]
+    omega
+  · omega
+
 #print axioms trimRun
 #print axioms exists_deletion_bubble
 #print axioms exists_insertion_bubble
+#print axioms exists_substitution_bubble
 
 end DeletionCode.RunBubbleConstruction

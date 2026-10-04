@@ -51,7 +51,7 @@ noncomputable def ofCatalogue {t k R : ℕ} (G : Fin R → Gram (windowLength k)
       ruleSpectrum (singleFamily (words r)).family (windowLength k) Finset.univ = G r :=
     (Classical.choose_spec (hcat r)).2.2
   refine ⟨flatFamily t R words, fun _ => rfl, ?_, ?_, ?_⟩
-  · refine ⟨?_, ?_, CatalogueBridge.differentLengths (flatFamily t R words)⟩
+  · refine ⟨?_, ?_, CatalogueBridge.notBothSingle (flatFamily t R words)⟩
     · intro b side
       exact (hvalid (CanonicalIndex.group t R b)).simple (indexEquiv t R b).2 side
     · intro b i j hi hj heq

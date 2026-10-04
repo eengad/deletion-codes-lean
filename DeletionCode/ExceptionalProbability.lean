@@ -21,10 +21,12 @@ variable {n : ℕ}
 /-- Exactly the partner and bad-trace conditions in the exceptional set,
 with no hash-label condition and no uniqueness condition on the partner. -/
 def CandidatePartner (t k : ℕ) (x y : Bits n) : Prop :=
-  x ≠ y ∧ ∃ (d : ℕ) (trace : AlignmentTrace.Trace),
+  x ≠ y ∧ ∃ trace : AlignmentTrace.Trace,
     trace.source = List.ofFn x ∧ trace.target = List.ofFn y ∧
-    trace.deletions = d ∧ trace.insertions = d ∧
-    (d < t ∨ (d = t ∧ ¬ FiniteConflictGraph.Separated (4 * windowLength k) trace))
+    trace.deletions = trace.insertions ∧
+    (2 * trace.deletions + trace.substitutions < 2 * t ∨
+      (2 * trace.deletions + trace.substitutions = 2 * t ∧
+        ¬ FiniteConflictGraph.Separated (4 * windowLength k) trace))
 
 /-- A fixed finite set of binary partners, independent of Q and the weights. -/
 noncomputable def candidatePartners (t k : ℕ) (x : Bits n) : Finset (Bits n) := by

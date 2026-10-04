@@ -3,10 +3,12 @@ import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Data.Fintype.EquivFin
 
 /-!
-The finite index set consists of actual deletion and insertion columns of a
-trace. Orientations, bits, source positions, and isolated one-edit targets
-are read from those columns. Its cardinalities are derived from the trace
-counters, including the balanced Fin (2*t) enumeration.
+The finite index set consists of the actual deletion, insertion and
+substitution columns of a trace. Orientations, bits, source positions, and
+isolated one-edit targets are read from those columns. Its cardinalities
+are derived from the trace counters, including the balanced Fin (2*t)
+enumeration of a trace with d deletions, d insertions and 2t-2d
+substitutions.
 -/
 namespace DeletionCode.TraceEditData
 
@@ -27,12 +29,14 @@ theorem column_isEdit (trace : Trace) (c : EditColumn trace) :
     (column trace c).isEdit = true := c.property
 
 theorem column_cases (trace : Trace) (c : EditColumn trace) :
-    (∃ bit, column trace c = .deletion bit) ∨ (∃ bit, column trace c = .insertion bit) := by
+    (∃ bit, column trace c = .deletion bit) ∨ (∃ bit, column trace c = .insertion bit) ∨
+      (∃ bit, column trace c = .substitution bit) := by
   have h := column_isEdit trace c
   cases hc : column trace c with
   | matched bit => simp only [hc, Column.isEdit, Bool.false_eq_true] at h
   | deletion bit => exact Or.inl ⟨bit, rfl⟩
-  | insertion bit => exact Or.inr ⟨bit, rfl⟩
+  | insertion bit => exact Or.inr (Or.inl ⟨bit, rfl⟩)
+  | substitution bit => exact Or.inr (Or.inr ⟨bit, rfl⟩)
 
 /-- The matched-column branch is unreachable in the actual edit index type,
 as proved by column_cases. Its unused value makes this a direct computation. -/
@@ -41,12 +45,15 @@ def orientation (trace : Trace) (c : EditColumn trace) : Orientation :=
   | .matched _ => .deletion
   | .deletion _ => .deletion
   | .insertion _ => .insertion
+  | .substitution _ => .substitution
 
+/-- The bit of the column: the deleted, inserted, or replaced source bit. -/
 def bit (trace : Trace) (c : EditColumn trace) : Bool :=
   match column trace c with
   | .matched b => b
   | .deletion b => b
   | .insertion b => b
+  | .substitution b => b
 
 theorem orientation_of_deletion (trace : Trace) (c : EditColumn trace) (b : Bool)
     (hc : column trace c = .deletion b) : orientation trace c = .deletion := by
@@ -62,6 +69,13 @@ theorem bit_of_deletion (trace : Trace) (c : EditColumn trace) (b : Bool)
 theorem bit_of_insertion (trace : Trace) (c : EditColumn trace) (b : Bool)
     (hc : column trace c = .insertion b) : bit trace c = b := by simp [bit, hc]
 
+theorem orientation_of_substitution (trace : Trace) (c : EditColumn trace) (b : Bool)
+    (hc : column trace c = .substitution b) : orientation trace c = .substitution := by
+  simp [orientation, hc]
+
+theorem bit_of_substitution (trace : Trace) (c : EditColumn trace) (b : Bool)
+    (hc : column trace c = .substitution b) : bit trace c = b := by simp [bit, hc]
+
 /-- Perform this one actual edit on the original source, independently of
 the other edit columns in the trace. -/
 def oneEditTarget (trace : Trace) (c : EditColumn trace) : List Bool :=
@@ -69,6 +83,8 @@ def oneEditTarget (trace : Trace) (c : EditColumn trace) : List Bool :=
   | .deletion => trace.source.eraseIdx (position trace c)
   | .insertion => trace.source.take (position trace c) ++
       bit trace c :: trace.source.drop (position trace c)
+  | .substitution => trace.source.take (position trace c) ++
+      (!bit trace c) :: trace.source.drop (position trace c + 1)
 
 theorem oneEditTarget_of_deletion (trace : Trace) (c : EditColumn trace) (b : Bool)
     (hc : column trace c = .deletion b) :
@@ -81,6 +97,13 @@ theorem oneEditTarget_of_insertion (trace : Trace) (c : EditColumn trace) (b : B
       b :: trace.source.drop (position trace c) := by
   simp only [oneEditTarget, orientation_of_insertion trace c b hc, bit_of_insertion trace c b hc]
 
+theorem oneEditTarget_of_substitution (trace : Trace) (c : EditColumn trace) (b : Bool)
+    (hc : column trace c = .substitution b) :
+    oneEditTarget trace c = trace.source.take (position trace c) ++
+      (!b) :: trace.source.drop (position trace c + 1) := by
+  simp only [oneEditTarget, orientation_of_substitution trace c b hc,
+    bit_of_substitution trace c b hc]
+
 def isDeletion : Column → Bool
   | .deletion _ => true
   | _ => false
@@ -89,25 +112,46 @@ def isInsertion : Column → Bool
   | .insertion _ => true
   | _ => false
 
+def isSubstitution : Column → Bool
+  | .substitution _ => true
+  | _ => false
+
 private theorem isDeletion_edit (col : Column) (h : isDeletion col = true) : col.isEdit = true := by
   cases col <;> simp_all only [isDeletion, Column.isEdit, Bool.false_eq_true]
 
 private theorem isInsertion_edit (col : Column) (h : isInsertion col = true) : col.isEdit = true := by
   cases col <;> simp_all only [isInsertion, Column.isEdit, Bool.false_eq_true]
 
+private theorem isSubstitution_edit (col : Column) (h : isSubstitution col = true) :
+    col.isEdit = true := by
+  cases col <;> simp_all only [isSubstitution, Column.isEdit, Bool.false_eq_true]
+
 theorem orientation_eq_deletion_iff (trace : Trace) (c : EditColumn trace) :
     orientation trace c = .deletion ↔ isDeletion (column trace c) = true := by
-  rcases column_cases trace c with ⟨b, hc⟩ | ⟨b, hc⟩
+  rcases column_cases trace c with ⟨b, hc⟩ | ⟨b, hc⟩ | ⟨b, hc⟩
   · simp only [orientation_of_deletion trace c b hc, hc, isDeletion]
   · simp only [orientation_of_insertion trace c b hc, hc, isDeletion, reduceCtorEq,
+      Bool.false_eq_true]
+  · simp only [orientation_of_substitution trace c b hc, hc, isDeletion, reduceCtorEq,
       Bool.false_eq_true]
 
 theorem orientation_eq_insertion_iff (trace : Trace) (c : EditColumn trace) :
     orientation trace c = .insertion ↔ isInsertion (column trace c) = true := by
-  rcases column_cases trace c with ⟨b, hc⟩ | ⟨b, hc⟩
+  rcases column_cases trace c with ⟨b, hc⟩ | ⟨b, hc⟩ | ⟨b, hc⟩
   · simp only [orientation_of_deletion trace c b hc, hc, isInsertion, reduceCtorEq,
       Bool.false_eq_true]
   · simp only [orientation_of_insertion trace c b hc, hc, isInsertion]
+  · simp only [orientation_of_substitution trace c b hc, hc, isInsertion, reduceCtorEq,
+      Bool.false_eq_true]
+
+theorem orientation_eq_substitution_iff (trace : Trace) (c : EditColumn trace) :
+    orientation trace c = .substitution ↔ isSubstitution (column trace c) = true := by
+  rcases column_cases trace c with ⟨b, hc⟩ | ⟨b, hc⟩ | ⟨b, hc⟩
+  · simp only [orientation_of_deletion trace c b hc, hc, isSubstitution, reduceCtorEq,
+      Bool.false_eq_true]
+  · simp only [orientation_of_insertion trace c b hc, hc, isSubstitution, reduceCtorEq,
+      Bool.false_eq_true]
+  · simp only [orientation_of_substitution trace c b hc, hc, isSubstitution]
 
 /-- Counting predicate-selected finite indices is the actual list count. -/
 theorem card_column_predicate (trace : Trace) (p : Column → Bool) :
@@ -133,17 +177,25 @@ theorem countP_isInsertion (trace : Trace) : trace.countP isInsertion = trace.in
   | cons col rest ih =>
     cases col <;> simp [isInsertion, List.countP_cons, Trace.insertions, ih]
 
+theorem countP_isSubstitution (trace : Trace) :
+    trace.countP isSubstitution = trace.substitutions := by
+  induction trace with
+  | nil => rfl
+  | cons col rest ih =>
+    cases col <;> simp [isSubstitution, List.countP_cons, Trace.substitutions, ih]
+
 theorem countP_isEdit (trace : Trace) :
-    trace.countP Column.isEdit = trace.deletions + trace.insertions := by
+    trace.countP Column.isEdit = trace.deletions + trace.insertions + trace.substitutions := by
   induction trace with
   | nil => rfl
   | cons col rest ih =>
     cases col <;>
       simp only [List.countP_cons, Column.isEdit, Bool.false_eq_true,
-        ite_true, ite_false, Trace.deletions, Trace.insertions, ih] <;> omega
+        ite_true, ite_false, Trace.deletions, Trace.insertions, Trace.substitutions, ih] <;> omega
 
 theorem card_editColumn (trace : Trace) :
-    Fintype.card (EditColumn trace) = trace.deletions + trace.insertions :=
+    Fintype.card (EditColumn trace) =
+      trace.deletions + trace.insertions + trace.substitutions :=
   (card_column_predicate trace Column.isEdit).trans (countP_isEdit trace)
 
 def deletionColumnEquiv (trace : Trace) :
@@ -174,12 +226,29 @@ theorem card_insertionColumns (trace : Trace) :
   (Fintype.card_congr (insertionColumnEquiv trace)).trans
     ((card_column_predicate trace isInsertion).trans (countP_isInsertion trace))
 
-/-- The balanced finite enumeration is obtained from the proved exact count. -/
+def substitutionColumnEquiv (trace : Trace) :
+    {c : EditColumn trace // orientation trace c = .substitution} ≃
+      {i : Fin trace.length // isSubstitution (trace.get i) = true} where
+  toFun c := ⟨c.val.val, (orientation_eq_substitution_iff trace c.val).mp c.property⟩
+  invFun i := ⟨⟨i.val, isSubstitution_edit (trace.get i.val) i.property⟩,
+    (orientation_eq_substitution_iff trace _).mpr i.property⟩
+  left_inv c := by apply Subtype.ext; apply Subtype.ext; rfl
+  right_inv i := by apply Subtype.ext; rfl
+
+theorem card_substitutionColumns (trace : Trace) :
+    Fintype.card {c : EditColumn trace // orientation trace c = .substitution} =
+      trace.substitutions :=
+  (Fintype.card_congr (substitutionColumnEquiv trace)).trans
+    ((card_column_predicate trace isSubstitution).trans (countP_isSubstitution trace))
+
+/-- The balanced finite enumeration is obtained from the proved exact count:
+equally many deletions and insertions, and 2t edit columns in all. -/
 noncomputable def editEquiv (trace : Trace) (t : ℕ)
-    (hdel : trace.deletions = t) (hins : trace.insertions = t) :
+    (hbal : trace.deletions = trace.insertions)
+    (hsum : 2 * trace.deletions + trace.substitutions = 2 * t) :
     Fin (2 * t) ≃ EditColumn trace :=
   (Fintype.equivFinOfCardEq (show Fintype.card (EditColumn trace) = 2 * t by
-    rw [card_editColumn, hdel, hins]
+    rw [card_editColumn]
     omega)).symm
 
 def sourcePrefix (trace : Trace) (c : EditColumn trace) : List Bool :=
@@ -249,6 +318,16 @@ theorem target_split_of_insertion (trace : Trace) (c : EditColumn trace) (b : Bo
     trace.target = targetPrefix trace c ++ b :: targetSuffix trace c := by
   simpa only [hc, Trace.target, List.append_assoc, List.singleton_append] using target_split trace c
 
+theorem source_split_of_substitution (trace : Trace) (c : EditColumn trace) (b : Bool)
+    (hc : column trace c = .substitution b) :
+    trace.source = sourcePrefix trace c ++ b :: sourceSuffix trace c := by
+  simpa only [hc, Trace.source, List.append_assoc, List.singleton_append] using source_split trace c
+
+theorem target_split_of_substitution (trace : Trace) (c : EditColumn trace) (b : Bool)
+    (hc : column trace c = .substitution b) :
+    trace.target = targetPrefix trace c ++ (!b) :: targetSuffix trace c := by
+  simpa only [hc, Trace.target, List.append_assoc, List.singleton_append] using target_split trace c
+
 theorem oneEditTarget_deletion_split (trace : Trace) (c : EditColumn trace) (b : Bool)
     (hc : column trace c = .deletion b) :
     oneEditTarget trace c = sourcePrefix trace c ++ sourceSuffix trace c := by
@@ -264,9 +343,23 @@ theorem oneEditTarget_insertion_split (trace : Trace) (c : EditColumn trace) (b 
     source_split_of_insertion trace c b hc]
   simp
 
+theorem oneEditTarget_substitution_split (trace : Trace) (c : EditColumn trace) (b : Bool)
+    (hc : column trace c = .substitution b) :
+    oneEditTarget trace c = sourcePrefix trace c ++ (!b) :: sourceSuffix trace c := by
+  rw [oneEditTarget_of_substitution trace c b hc, position_eq_sourcePrefix_length,
+    source_split_of_substitution trace c b hc]
+  simp
+
 theorem deletion_position_lt (trace : Trace) (c : EditColumn trace) (b : Bool)
     (hc : column trace c = .deletion b) : position trace c < trace.source.length := by
   have h := congrArg List.length (source_split_of_deletion trace c b hc)
+  simp only [List.length_append, List.length_cons] at h
+  rw [position_eq_sourcePrefix_length]
+  omega
+
+theorem substitution_position_lt (trace : Trace) (c : EditColumn trace) (b : Bool)
+    (hc : column trace c = .substitution b) : position trace c < trace.source.length := by
+  have h := congrArg List.length (source_split_of_substitution trace c b hc)
   simp only [List.length_append, List.length_cons] at h
   rw [position_eq_sourcePrefix_length]
   omega
@@ -282,9 +375,11 @@ theorem insertion_position_le (trace : Trace) (c : EditColumn trace) (b : Bool)
 #print axioms card_editColumn
 #print axioms card_deletionColumns
 #print axioms card_insertionColumns
+#print axioms card_substitutionColumns
 #print axioms editEquiv
 #print axioms split_column
 #print axioms oneEditTarget_deletion_split
 #print axioms oneEditTarget_insertion_split
+#print axioms oneEditTarget_substitution_split
 
 end DeletionCode.TraceEditData

@@ -4,7 +4,9 @@ import Init.Data.List.Nat.Erase
 /-!
 The manuscript's concrete local-word grammar, connected to header semantics.
 The words are A d^rho B and A d^(rho-1) B, where both flanks have length
-L-rho. Deleting at L-1 is proved to remove a bit of the displayed run.
+L-rho. Deleting at L-1 is proved to remove a bit of the displayed run. A
+substitution bubble has rho = 1, so its words are A d B and A (1-d) B with
+flanks of length L-1, and flipping at L-1 replaces the run letter.
 Boundary-bit and simple-path restrictions are additional catalogue filters;
 they are not needed for these word identities.
 -/
@@ -33,6 +35,7 @@ structure BubbleWord (k : ℕ) where
   rho_upper : rho ≤ k + 1
   left_length : left.length = windowLength k - rho
   right_length : right.length = windowLength k - rho
+  sub_rho : orientation = .substitution → rho = 1
 
 namespace BubbleWord
 
@@ -47,15 +50,21 @@ def longWord (bubble : BubbleWord k) : List Bool :=
 def shortWord (bubble : BubbleWord k) : List Bool :=
   bubble.left ++ (List.replicate (bubble.rho - 1) bubble.bit ++ bubble.right)
 
+/-- The longer word with its last run letter replaced by the other letter. -/
+def flipWord (bubble : BubbleWord k) : List Bool :=
+  bubble.left ++ (List.replicate (bubble.rho - 1) bubble.bit ++ ((!bubble.bit) :: bubble.right))
+
 def negativeWord (bubble : BubbleWord k) : List Bool :=
   match bubble.orientation with
   | .deletion => bubble.longWord
   | .insertion => bubble.shortWord
+  | .substitution => bubble.longWord
 
 def positiveWord (bubble : BubbleWord k) : List Bool :=
   match bubble.orientation with
   | .deletion => bubble.shortWord
   | .insertion => bubble.longWord
+  | .substitution => bubble.flipWord
 
 theorem longWord_length (bubble : BubbleWord k) :
     bubble.longWord.length = longLength k bubble.header := by
@@ -73,12 +82,21 @@ theorem shortWord_length (bubble : BubbleWord k) :
     bubble.left_length, bubble.right_length, shortLength, longLength, header, windowLength]
   omega
 
+theorem flipWord_length (bubble : BubbleWord k) :
+    bubble.flipWord.length = longLength k bubble.header := by
+  have hlo := bubble.rho_lower
+  have hhi := bubble.rho_upper
+  simp only [flipWord, List.length_append, List.length_replicate, List.length_cons,
+    bubble.left_length, bubble.right_length, longLength, header, windowLength]
+  omega
+
 theorem negativeWord_length (bubble : BubbleWord k) :
     bubble.negativeWord.length = negativeLength k bubble.header := by
   cases ho : bubble.orientation <;>
     simp only [negativeWord, negativeLength, header, ho]
   · exact bubble.longWord_length
   · exact bubble.shortWord_length
+  · exact bubble.longWord_length
 
 theorem positiveWord_length (bubble : BubbleWord k) :
     bubble.positiveWord.length = positiveLength k bubble.header := by
@@ -86,6 +104,7 @@ theorem positiveWord_length (bubble : BubbleWord k) :
     simp only [positiveWord, positiveLength, header, ho]
   · exact bubble.shortWord_length
   · exact bubble.longWord_length
+  · exact bubble.flipWord_length
 
 theorem edit_in_run (bubble : BubbleWord k) :
     bubble.left.length ≤ editOffset k ∧
@@ -123,19 +142,82 @@ theorem delete_longWord (bubble : BubbleWord k) :
     deleteAt (listLetters bubble.longWord) (editOffset k) = listLetters bubble.shortWord := by
   rw [← listLetters_eraseIdx, bubble.eraseIdx_longWord]
 
+/-- The actual bit at a list split. -/
+theorem listLetters_split (pre suffix : List Bool) (bit : Bool) :
+    listLetters (pre ++ bit :: suffix) pre.length = bit := by
+  simp only [listLetters, List.getD_eq_getElem?_getD]
+  rw [List.getElem?_append_right (Nat.le_refl _)]
+  simp
+
+theorem listLetters_delete_split (pre suffix : List Bool) (bit : Bool) :
+    deleteAt (listLetters (pre ++ bit :: suffix)) pre.length = listLetters (pre ++ suffix) := by
+  rw [← listLetters_eraseIdx, List.eraseIdx_append_of_length_le (Nat.le_refl _)]
+  simp
+
+/-- Insertion at a list split, derived from the inverse edit identity. -/
+theorem listLetters_insert_split (pre suffix : List Bool) (bit : Bool) :
+    insertAt (listLetters (pre ++ suffix)) pre.length bit = listLetters (pre ++ bit :: suffix) := by
+  calc
+    insertAt (listLetters (pre ++ suffix)) pre.length bit =
+        insertAt (deleteAt (listLetters (pre ++ bit :: suffix)) pre.length)
+          pre.length (listLetters (pre ++ bit :: suffix) pre.length) := by
+      rw [listLetters_delete_split, listLetters_split]
+    _ = listLetters (pre ++ bit :: suffix) := insert_delete _ _
+
+theorem prefix_length (bubble : BubbleWord k) :
+    (bubble.left ++ List.replicate (bubble.rho - 1) bubble.bit).length = editOffset k := by
+  have hlo := bubble.rho_lower
+  have hhi := bubble.rho_upper
+  simp only [List.length_append, List.length_replicate, bubble.left_length, editOffset, windowLength]
+  omega
+
+/-- Inserting the other letter at the edit offset of the shorter word gives the flipped word. -/
+theorem insert_flipWord (bubble : BubbleWord k) :
+    insertAt (listLetters bubble.shortWord) (editOffset k) (!bubble.bit) =
+      listLetters bubble.flipWord := by
+  have hshort : bubble.shortWord =
+      (bubble.left ++ List.replicate (bubble.rho - 1) bubble.bit) ++ bubble.right := by
+    simp [shortWord, List.append_assoc]
+  have hflip : bubble.flipWord =
+      (bubble.left ++ List.replicate (bubble.rho - 1) bubble.bit) ++ (!bubble.bit) :: bubble.right := by
+    simp [flipWord, List.append_assoc]
+  rw [hshort, hflip, ← bubble.prefix_length]
+  exact listLetters_insert_split _ _ _
+
+/-- Flipping the run letter of the longer word gives the flipped grammar word. -/
+theorem flip_longWord (bubble : BubbleWord k) :
+    flipAt (listLetters bubble.longWord) (editOffset k) = listLetters bubble.flipWord := by
+  rw [← bubble.insert_flipWord, ← bubble.delete_longWord]
+  have hlong : listLetters bubble.longWord =
+      insertAt (deleteAt (listLetters bubble.longWord) (editOffset k)) (editOffset k)
+        bubble.bit := by
+    conv_lhs => rw [← insert_delete (listLetters bubble.longWord) (editOffset k)]
+    rw [bubble.header_bit]
+    rfl
+  conv_lhs => rw [hlong]
+  exact flip_insertAt _ _ _
+
 theorem negativeWord_semantics (bubble : BubbleWord k) :
     listLetters bubble.negativeWord =
       negativePath k bubble.header (listLetters bubble.longWord) := by
-  cases ho : bubble.orientation <;>
+  cases ho : bubble.orientation with
+  | deletion => simp only [negativeWord, negativePath, header, ho]
+  | insertion =>
     simp only [negativeWord, negativePath, header, ho]
-  exact bubble.delete_longWord.symm
+    exact bubble.delete_longWord.symm
+  | substitution => simp only [negativeWord, negativePath, header, ho]
 
 theorem positiveWord_semantics (bubble : BubbleWord k) :
     listLetters bubble.positiveWord =
       positivePath k bubble.header (listLetters bubble.longWord) := by
-  cases ho : bubble.orientation <;>
+  cases ho : bubble.orientation with
+  | deletion =>
     simp only [positiveWord, positivePath, header, ho]
-  exact bubble.delete_longWord.symm
+    exact bubble.delete_longWord.symm
+  | insertion => simp only [positiveWord, positivePath, header, ho]
+  | substitution =>
+    simp only [positiveWord, positivePath, header, ho]
+    exact bubble.flip_longWord.symm
 
 /-- Rebuilding from the grammar's negative word recovers the grammar's positive word. -/
 theorem rebuild_positiveWord (bubble : BubbleWord k) :
@@ -171,6 +253,8 @@ theorem editedFamily_positive {B : Type*} {k : ℕ}
 #print axioms BubbleWord.shortWord_length
 #print axioms BubbleWord.header_bit
 #print axioms BubbleWord.eraseIdx_longWord
+#print axioms BubbleWord.flipWord_length
+#print axioms BubbleWord.flip_longWord
 #print axioms BubbleWord.negativeWord_semantics
 #print axioms BubbleWord.positiveWord_semantics
 #print axioms BubbleWord.rebuild_positiveWord

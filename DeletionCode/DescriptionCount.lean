@@ -19,12 +19,12 @@ Root positions; headers; root names; padded instructions with 12 fields.
 RecordCodec verifies the twelve-field instruction serialization.
 -/
 abbrev Description (n L ν c : ℕ) :=
-  (Fin c → Fin n) × (Fin ν → Fin (4 * L)) × (Fin c → Fin ν) ×
+  (Fin c → Fin n) × (Fin ν → Fin (6 * L)) × (Fin c → Fin ν) ×
   (Fin (4 * ν) → (Fin 12 → Fin (fieldBound L ν)))
 
 theorem description_card (n L ν c : ℕ) :
     Fintype.card (Description n L ν c) =
-      n ^ c * (4 * L) ^ ν * ν ^ c * ((fieldBound L ν) ^ 12) ^ (4 * ν) := by
+      n ^ c * (6 * L) ^ ν * ν ^ c * ((fieldBound L ν) ^ 12) ^ (4 * ν) := by
   simp [Description, Fintype.card_prod, Fintype.card_fun]
   <;> ring
 
@@ -41,13 +41,13 @@ theorem description_bound (n L ν c : ℕ)
   have hB : 1 ≤ B := by
     dsimp [B, fieldBound]
     nlinarith
-  have hheader : 4 * L ≤ B := by
+  have hheader : 6 * L ≤ B := by
     dsimp [B, fieldBound]
     nlinarith
   have hname : ν ≤ B := by
     dsimp [B, fieldBound]
     nlinarith
-  have hp1 : (4 * L) ^ ν ≤ B ^ ν := by gcongr
+  have hp1 : (6 * L) ^ ν ≤ B ^ ν := by gcongr
   have hp2 : ν ^ c ≤ B ^ ν := by
     calc
       ν ^ c ≤ B ^ c := by gcongr
@@ -58,7 +58,7 @@ theorem description_bound (n L ν c : ℕ)
     omega
   calc
     Fintype.card (Description n L ν c) =
-        n ^ c * ((4 * L) ^ ν * ν ^ c * (B ^ 12) ^ (4 * ν)) := by
+        n ^ c * ((6 * L) ^ ν * ν ^ c * (B ^ 12) ^ (4 * ν)) := by
           rw [description_card]
           dsimp [B]
           ring

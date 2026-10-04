@@ -72,16 +72,14 @@ theorem attached_union_card_bound_quadratic {k : ℕ}
     (hmeet : ∀ B ∈ Bs, ∃ v, Incident B v ∧ Incident {w} v)
     (hdisjoint : ∀ B ∈ Bs, ∀ C ∈ Bs, B ≠ C →
       ∀ v, Incident B v → ¬ Incident C v)
-    (hvertices : Fintype.card (RuleSetVertex {w}) ≤ 4 * t * L) :
-    (insert w (Bs.biUnion id)).card ≤ 1 + 4 * t * L ^ 2 := by
+    (hvertices : Fintype.card (RuleSetVertex {w}) ≤ 2 * t * (2 * L + 1)) :
+    (insert w (Bs.biUnion id)).card ≤ 1 + 4 * t * L ^ 2 + 2 * t * L := by
   calc
     (insert w (Bs.biUnion id)).card ≤ 1 + L * Fintype.card (RuleSetVertex {w}) :=
       attached_union_card_bound Bs w L hsize hmeet hdisjoint
-    _ ≤ 1 + L * (4 * t * L) :=
+    _ ≤ 1 + L * (2 * t * (2 * L + 1)) :=
       Nat.add_le_add_left (Nat.mul_le_mul_left L hvertices) 1
-    _ = 1 + 4 * t * L ^ 2 := by
-      simp only [pow_two]
-      ac_rfl
+    _ = 1 + 4 * t * L ^ 2 + 2 * t * L := by ring
 
 #print axioms attached_block_count_le_vertices
 #print axioms attached_union_card_bound

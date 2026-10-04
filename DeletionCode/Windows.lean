@@ -62,6 +62,46 @@ def deletionSeed (k cut : ℕ) (extra : Bool) (u : Letters) : Letters :=
 def insertionSeed (cut : ℕ) (d : Bool) (u : Letters) : Letters :=
   fun i => if i < cut then u i else if i = cut then d else u (i - 1)
 
+/-- Replace the letter at one position by the other letter. -/
+def flipAt (p : Letters) (ell : ℕ) : Letters :=
+  fun i => if i = ell then !(p i) else p i
+
+/-- Flip the seed letter lying over the cut, if the seed covers it. -/
+def flipSeed (ell s : ℕ) (u : Letters) : Letters :=
+  fun i => if s + i = ell then !(u i) else u i
+
+theorem flipAt_flipAt (p : Letters) (ell : ℕ) : flipAt (flipAt p ell) ell = p := by
+  funext i
+  by_cases h : i = ell <;> simp [flipAt, h]
+
+theorem flipAt_at (p : Letters) (ell : ℕ) : flipAt p ell ell = !(p ell) := by
+  simp [flipAt]
+
+theorem flipAt_of_ne (p : Letters) (ell i : ℕ) (h : i ≠ ell) : flipAt p ell i = p i := by
+  simp [flipAt, h]
+
+/-- A block not containing the flipped position is unchanged. -/
+theorem flip_agree_of_avoid (p : Letters) (ell s k : ℕ)
+    (h : s + k ≤ ell ∨ ell < s) : Agree (flipAt p ell) s p s k := by
+  intro i hi
+  have hne : s + i ≠ ell := by omega
+  simp [flipAt, hne]
+
+/-- Flipping the inserted letter is inserting the other letter. -/
+theorem flip_insertAt (p : Letters) (ell : ℕ) (d : Bool) :
+    flipAt (insertAt p ell d) ell = insertAt p ell (!d) := by
+  funext i
+  by_cases h : i = ell
+  · subst h
+    simp [flipAt, insertAt]
+  · simp [flipAt, insertAt, h]
+
+theorem flip_crossing (p : Letters) (ell s k : ℕ) :
+    ∀ i, i < k → flipAt p ell (s + i) = flipSeed ell s (fun j => p (s + j)) i := by
+  intro i _
+  unfold flipSeed flipAt
+  by_cases h : s + i = ell <;> simp [h]
+
 theorem delete_insert (p : Letters) (ell : ℕ) (d : Bool) :
     deleteAt (insertAt p ell d) ell = p := by
   funext i
@@ -156,6 +196,9 @@ theorem insertion_crossing (p : Letters) (ell s k : ℕ) (d : Bool)
 #print axioms three_windows_cover
 #print axioms three_windows_overlap
 #print axioms bubble_lengths
+#print axioms flipAt_flipAt
+#print axioms flip_agree_of_avoid
+#print axioms flip_crossing
 #print axioms delete_insert
 #print axioms insert_delete
 #print axioms deletion_before

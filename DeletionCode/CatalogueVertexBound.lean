@@ -52,10 +52,10 @@ theorem namedVertex_surjective {t k : ℕ} (E : EditedFamily (Fin (2 * t)) k) :
       rw [hindex]
       exact hv.symm
 
-/-- The two path lengths and rho ≥ 1 give at most 2L vertex names per bubble. -/
+/-- The two path lengths and rho ≥ 1 give at most 2L+1 vertex names per bubble. -/
 theorem bubble_vertex_names_le {t k : ℕ} (E : EditedFamily (Fin (2 * t)) k)
     (b : Fin (2 * t)) :
-    E.family.extra b false + 2 + (E.family.extra b true + 1) ≤ 2 * windowLength k := by
+    E.family.extra b false + 2 + (E.family.extra b true + 1) ≤ 2 * windowLength k + 1 := by
   have hlo := E.rho_lower b
   have hhi := E.rho_upper b
   cases ho : (E.header b).orientation <;>
@@ -64,28 +64,28 @@ theorem bubble_vertex_names_le {t k : ℕ} (E : EditedFamily (Fin (2 * t)) k)
       windowLength, ho] <;> omega
 
 theorem supported_vertex_count_le {t k : ℕ} (E : EditedFamily (Fin (2 * t)) k) :
-    Nat.card (SupportedVertex E.family (windowLength k)) ≤ 4 * t * windowLength k := by
+    Nat.card (SupportedVertex E.family (windowLength k)) ≤
+      2 * t * (2 * windowLength k + 1) := by
   classical
   letI : Fintype (SupportedVertex E.family (windowLength k)) := by
     unfold SupportedVertex
     infer_instance
-  have hnames : Fintype.card (VertexNames E) ≤ (2 * t) * (2 * windowLength k) := by
+  have hnames : Fintype.card (VertexNames E) ≤ (2 * t) * (2 * windowLength k + 1) := by
     rw [Fintype.card_sigma]
     calc
       (∑ b : Fin (2 * t),
           Fintype.card (Fin (E.family.extra b false + 2) ⊕
             Fin (E.family.extra b true + 1))) ≤
-          ∑ _b : Fin (2 * t), 2 * windowLength k := by
+          ∑ _b : Fin (2 * t), (2 * windowLength k + 1) := by
         apply Finset.sum_le_sum
         intro b hb
         simpa only [Fintype.card_sum, Fintype.card_fin] using bubble_vertex_names_le E b
-      _ = (2 * t) * (2 * windowLength k) := by simp
+      _ = (2 * t) * (2 * windowLength k + 1) := by simp
   have hcard := Fintype.card_le_of_surjective (namedVertex E) (namedVertex_surjective E)
   calc
     Nat.card (SupportedVertex E.family (windowLength k)) =
         Fintype.card (SupportedVertex E.family (windowLength k)) := Nat.card_eq_fintype_card
-    _ ≤ (2 * t) * (2 * windowLength k) := hcard.trans hnames
-    _ = 4 * t * windowLength k := by ring
+    _ ≤ (2 * t) * (2 * windowLength k + 1) := hcard.trans hnames
 
 private theorem singleton_rules {t k : ℕ} (words : Fin (2 * t) → BubbleWord k)
     (w : Gram (windowLength k) → ℤ)
@@ -114,7 +114,7 @@ private theorem singleton_rules {t k : ℕ} (words : Fin (2 * t) → BubbleWord 
 nonzero signed support, not a count attached to a chosen presentation. -/
 theorem catalogue_vertex_card_le {t k : ℕ}
     (w : Gram (windowLength k) → ℤ) (hw : CatalogueRule t k w) :
-    Fintype.card (RuleSetVertex {w}) ≤ 4 * t * windowLength k := by
+    Fintype.card (RuleSetVertex {w}) ≤ 2 * t * (2 * windowLength k + 1) := by
   obtain ⟨words, hvalid, _, hvalue⟩ := hw
   let E := indexedFamily words (fun _ => (0 : Fin 1))
   have hQ : rulesOfFamily E (fun _ => (0 : Fin 1)) = {w} :=
@@ -127,7 +127,7 @@ theorem catalogue_vertex_card_le {t k : ℕ}
     Fintype.card (RuleSetVertex {w}) = Nat.card (RuleSetVertex {w}) :=
       Nat.card_eq_fintype_card.symm
     _ = Nat.card (SupportedVertex E.family (windowLength k)) := Nat.card_congr e
-    _ ≤ 4 * t * windowLength k := supported_vertex_count_le E
+    _ ≤ 2 * t * (2 * windowLength k + 1) := supported_vertex_count_le E
 
 #print axioms namedVertex_surjective
 #print axioms bubble_vertex_names_le

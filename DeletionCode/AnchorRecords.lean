@@ -3,11 +3,12 @@ import DeletionCode.TraceSeparation
 import Mathlib.Data.List.OfFn
 
 /-!
-Chronological edit records use absolute matched-column anchors. A deletion
-stores no source bit: its payload is (false,false). An insertion stores
-(true,bit). The original source and the record reconstruct the actual target.
-The finite-vector realization is suitable for counting records independently
-of the random hash, including nonseparated alignments.
+Chronological edit records use absolute matched-column anchors. Each packet
+carries one anchor and a two-bit tag: a deletion stores no source bit and
+has tag (false,false), a substitution has tag (false,true), and an insertion
+of bit b has tag (true,b). The original source and the record reconstruct
+the actual target. The finite-vector realization is suitable for counting
+records independently of the random hash, including nonseparated alignments.
 -/
 namespace DeletionCode.AnchorRecords
 
@@ -19,23 +20,30 @@ def payload : Column → Bool × Bool
   | .matched _ => (false, false)
   | .deletion _ => (false, false)
   | .insertion bit => (true, bit)
+  | .substitution _ => (false, true)
 
 def encodeFrom (matchedBefore : ℕ) : Trace → List Packet
   | [] => []
   | .matched _ :: rest => encodeFrom (matchedBefore + 1) rest
   | .deletion _ :: rest => (matchedBefore, (false, false)) :: encodeFrom matchedBefore rest
   | .insertion bit :: rest => (matchedBefore, (true, bit)) :: encodeFrom matchedBefore rest
+  | .substitution _ :: rest => (matchedBefore, (false, true)) :: encodeFrom matchedBefore rest
 
 def encode (trace : Trace) : List Packet := encodeFrom 0 trace
 
-/-- Copy the matched gap; then delete the next source letter or insert a bit.
-The decoder is total even on malformed records, which are harmless overcounts. -/
+/-- Copy the matched gap; then insert a bit, flip the next source letter, or
+delete it. The decoder is total even on malformed records, which are
+harmless overcounts. -/
 def decodeFrom (matchedBefore : ℕ) (source : List Bool) : List Packet → List Bool
   | [] => source
   | (anchor, (side, bit)) :: rest =>
       if side then
         source.take (anchor - matchedBefore) ++
           bit :: decodeFrom anchor (source.drop (anchor - matchedBefore)) rest
+      else if bit then
+        source.take (anchor - matchedBefore) ++
+          (!(source.getD (anchor - matchedBefore) false)) ::
+            decodeFrom anchor (source.drop (anchor - matchedBefore + 1)) rest
       else
         source.take (anchor - matchedBefore) ++
           decodeFrom anchor (source.drop (anchor - matchedBefore + 1)) rest
@@ -44,14 +52,17 @@ def decode (source : List Bool) (packets : List Packet) : List Bool :=
   decodeFrom 0 source packets
 
 theorem encodeFrom_length (trace : Trace) (m : ℕ) :
-    (encodeFrom m trace).length = trace.deletions + trace.insertions := by
+    (encodeFrom m trace).length =
+      trace.deletions + trace.insertions + trace.substitutions := by
   induction trace generalizing m with
   | nil => rfl
   | cons col rest ih =>
-    cases col <;> simp [encodeFrom, Trace.deletions, Trace.insertions, ih] <;> omega
+    cases col <;>
+      simp [encodeFrom, Trace.deletions, Trace.insertions, Trace.substitutions, ih] <;> omega
 
 theorem encode_length (trace : Trace) :
-    (encode trace).length = trace.deletions + trace.insertions := encodeFrom_length trace 0
+    (encode trace).length = trace.deletions + trace.insertions + trace.substitutions :=
+  encodeFrom_length trace 0
 
 theorem encodeFrom_anchor_bounds (trace : Trace) (m : ℕ) (p : Packet)
     (hp : p ∈ encodeFrom m trace) :
@@ -74,6 +85,11 @@ theorem encodeFrom_anchor_bounds (trace : Trace) (m : ℕ) (p : Packet)
       rcases hp with rfl | hp
       · simp [Trace.matchedCount]
       · exact ih m hp
+    | substitution bit =>
+      simp only [encodeFrom, List.mem_cons] at hp
+      rcases hp with rfl | hp
+      · simp [Trace.matchedCount]
+      · exact ih m hp
 
 theorem encode_anchor_le (trace : Trace) (p : Packet) (hp : p ∈ encode trace) :
     p.1 ≤ trace.matchedCount := by
@@ -88,7 +104,7 @@ private theorem decodeFrom_matched (m : ℕ) (bit : Bool) (source : List Bool)
     obtain ⟨anchor, side, inserted⟩ := packet
     have ha : m + 1 ≤ anchor := hanchor _ (List.mem_cons_self ..)
     have hgap : anchor - m = (anchor - (m + 1)) + 1 := by omega
-    cases side <;> simp [decodeFrom, hgap, Nat.add_assoc]
+    cases side <;> cases inserted <;> simp [decodeFrom, hgap, Nat.add_assoc]
 
 /-- The record decoder recovers the actual trace target from its source. -/
 theorem decodeFrom_encodeFrom (trace : Trace) (m : ℕ) :
@@ -106,15 +122,18 @@ theorem decodeFrom_encodeFrom (trace : Trace) (m : ℕ) :
       simp [encodeFrom, decodeFrom, Trace.source, Trace.target, ih]
     | insertion bit =>
       simp [encodeFrom, decodeFrom, Trace.source, Trace.target, ih]
+    | substitution bit =>
+      simp [encodeFrom, decodeFrom, Trace.source, Trace.target, ih]
 
 theorem decode_encode (trace : Trace) : decode trace.source (encode trace) = trace.target :=
   decodeFrom_encodeFrom trace 0
 
-/-- Zero deletions and insertions leave every source letter matched. -/
+/-- Zero edits of every kind leave every source letter matched. -/
 theorem target_eq_source_of_zero (trace : Trace)
-    (hdel : trace.deletions = 0) (hins : trace.insertions = 0) :
+    (hdel : trace.deletions = 0) (hins : trace.insertions = 0)
+    (hsub : trace.substitutions = 0) :
     trace.target = trace.source := by
-  have hlen : (encode trace).length = 0 := by rw [encode_length, hdel, hins]
+  have hlen : (encode trace).length = 0 := by rw [encode_length, hdel, hins, hsub]
   have he : encode trace = [] := List.length_eq_zero_iff.mp hlen
   simpa only [he, decode, decodeFrom] using (decode_encode trace).symm
 
@@ -135,7 +154,8 @@ theorem encode_split_edit (trace : Trace) (c : EditColumn trace) :
   have hs := congrArg (encodeFrom 0) (split_column trace c)
   rw [encodeFrom_append] at hs
   simp only [Nat.zero_add] at hs
-  rcases column_cases trace c with ⟨bit, hc⟩ | ⟨bit, hc⟩
+  rcases column_cases trace c with ⟨bit, hc⟩ | ⟨bit, hc⟩ | ⟨bit, hc⟩
+  · simpa only [encode, Trace.matchedAnchor, hc, encodeFrom, payload] using hs
   · simpa only [encode, Trace.matchedAnchor, hc, encodeFrom, payload] using hs
   · simpa only [encode, Trace.matchedAnchor, hc, encodeFrom, payload] using hs
 
@@ -173,16 +193,22 @@ theorem recordRank_strict (trace : Trace) (c d : EditColumn trace)
     (show c.val.val + 1 ≤ d.val.val by omega)
   have hins := TraceSeparation.insertions_take_mono trace
     (show c.val.val + 1 ≤ d.val.val by omega)
+  have hsub := TraceSeparation.substitutions_take_mono trace
+    (show c.val.val + 1 ≤ d.val.val by omega)
   have hstep : Trace.deletions (trace.take (c.val.val + 1)) +
-      Trace.insertions (trace.take (c.val.val + 1)) =
-        Trace.deletions (trace.take c.val.val) + Trace.insertions (trace.take c.val.val) + 1 := by
+      Trace.insertions (trace.take (c.val.val + 1)) +
+      Trace.substitutions (trace.take (c.val.val + 1)) =
+        Trace.deletions (trace.take c.val.val) + Trace.insertions (trace.take c.val.val) +
+          Trace.substitutions (trace.take c.val.val) + 1 := by
     rw [List.take_succ_eq_append_getElem c.val.isLt,
-      Trace.deletions_append, Trace.insertions_append]
+      Trace.deletions_append, Trace.insertions_append, Trace.substitutions_append]
     change Trace.deletions (trace.take c.val.val) + Trace.deletions [column trace c] +
-      (Trace.insertions (trace.take c.val.val) + Trace.insertions [column trace c]) = _
-    rcases column_cases trace c with ⟨bit, hc⟩ | ⟨bit, hc⟩
-    · simp only [hc, Trace.deletions, Trace.insertions] <;> omega
-    · simp only [hc, Trace.deletions, Trace.insertions] <;> omega
+      (Trace.insertions (trace.take c.val.val) + Trace.insertions [column trace c]) +
+      (Trace.substitutions (trace.take c.val.val) + Trace.substitutions [column trace c]) = _
+    rcases column_cases trace c with ⟨bit, hc⟩ | ⟨bit, hc⟩ | ⟨bit, hc⟩
+    · simp only [hc, Trace.deletions, Trace.insertions, Trace.substitutions] <;> omega
+    · simp only [hc, Trace.deletions, Trace.insertions, Trace.substitutions] <;> omega
+    · simp only [hc, Trace.deletions, Trace.insertions, Trace.substitutions] <;> omega
   simp only [recordRank, encode_length]
   omega
 
@@ -198,8 +224,10 @@ theorem recordIndex_injective (trace : Trace) : Function.Injective (recordIndex 
   · have := recordRank_strict trace d c hgt
     omega
 
-/-- With at least one deletion, every edit anchor is strictly below source length. -/
-theorem encode_anchor_lt_source (trace : Trace) (hd : 1 ≤ trace.deletions)
+/-- With at least one deletion or substitution, every edit anchor is
+strictly below the source length. -/
+theorem encode_anchor_lt_source (trace : Trace)
+    (hd : 1 ≤ trace.deletions + trace.substitutions)
     (p : Packet) (hp : p ∈ encode trace) : p.1 < trace.source.length := by
   have ha := encode_anchor_le trace p hp
   have hn := trace.source_length
@@ -216,19 +244,20 @@ theorem finite_record_of_bounds (packets : List Packet) (n r : ℕ)
   change List.ofFn (packets.get) = packets
   exact List.ofFn_get packets
 
-/-- Every positive balanced trace has a record in the finite product space
-used in the counting proof. The packet list is equal to the actual encoding. -/
-theorem exists_finite_record (trace : Trace) (n d : ℕ)
-    (hsource : trace.source.length = n) (hdel : trace.deletions = d)
-    (hins : trace.insertions = d) (hd : 1 ≤ d) :
-    ∃ anchors : Fin (2 * d) → Fin n, ∃ data : Fin (2 * d) → Bool × Bool,
+/-- Every trace with at least one deletion or substitution has a record in
+the finite product space used in the counting proof, indexed by its total
+number of edits. The packet list is equal to the actual encoding. -/
+theorem exists_finite_record (trace : Trace) (n r : ℕ)
+    (hsource : trace.source.length = n)
+    (hlen : trace.deletions + trace.insertions + trace.substitutions = r)
+    (hpos : 1 ≤ trace.deletions + trace.substitutions) :
+    ∃ anchors : Fin r → Fin n, ∃ data : Fin r → Bool × Bool,
       List.ofFn (fun i => ((anchors i).val, data i)) = encode trace := by
   apply finite_record_of_bounds
-  · rw [encode_length, hdel, hins]
-    omega
+  · rw [encode_length, hlen]
   · intro p hp
     rw [← hsource]
-    exact encode_anchor_lt_source trace (by omega) p hp
+    exact encode_anchor_lt_source trace hpos p hp
 
 /-- Any finite-vector presentation of the encoding contains distinct indices
 for distinct actual edits, with precisely their matched-column anchors. -/
