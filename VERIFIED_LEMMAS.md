@@ -10,7 +10,9 @@ verified. The target is
 Statements are identified below by the LaTeX labels of the paper's source;
 the README gives the corresponding lemma numbers. The introductory
 `thm:intro` is the same result restated as `thm:main`. Comparisons with the
-paper below refer to published version 1.
+paper below refer to published version 1 and the preserved binary development.
+The final section records the extension to arbitrary finite alphabets, whose
+main theorem has a remainder constant independent of the alphabet size.
 
 The formal statements use an edit model in which an edit is a single
 insertion, deletion or substitution and a code corrects at most t edits in
@@ -504,3 +506,51 @@ each replacement is a bubble of the catalogue. What changes in the proof:
 The final statement `OptimalRedundancy.main` is unchanged in form; its
 definition of a correcting code, `CodeSelection.Corrects`, now refers to t
 edits of the three kinds.
+
+## Finite alphabets
+
+The `DeletionCode.Qary` development proves the same leading redundancy
+coefficient for every fixed finite alphabet with q >= 2 symbols and t >= 2
+insertions, deletions and substitutions in total. The original binary
+modules remain unchanged. Alphabet-independent hashing, numerical and graph
+lemmas are shared; alphabet-bearing words, traces, spectra and recovery data
+are generalized explicitly.
+
+| Step | Q-ary theorem or definition | Interpretation |
+| --- | --- | --- |
+| Genuine edits and alignments | `Qary.EditAlignment.Script`, `Alignment`, `equal_length_confusability` | A substitution records distinct source and target symbols. Successive substitutions may cancel or leave another substitution. Confusability still yields d deletions, d insertions and s substitutions with 2d+s <= 2t. |
+| Unique words | `Qary.UniqueWordCount.seven_eighths_le_card_unique_real`, `card_pow_le_two_mul_card_unique` | For each fixed pair of distinct in-bounds starting positions, equal, possibly overlapping, k-substrings leave at most q^(n-k) words. At the chosen k, at least 7/8 of the q^n words are unique; in particular q^n <= 2 times the unique-family cardinality. |
+| Local bubbles and coverage | `Qary.CatalogueWords.BubbleWord`, `Qary.BubbleEndpoints`, `Qary.VerifiedConflictGraphWitness.separated_coverage` | Indel flank letters are unequal to the run symbol and may differ from each other. A substitution bubble replaces d by a recorded e != d. Actual traces supply the local bubbles, their disjointness and full spectrum sum. |
+| Recovery and counting | `Qary.RecordSerialization.description_roundtrip`, `Qary.ManuscriptCounting.card_bound` | Underlying generating rule sets satisfy the bound n^c (LR)^(a_t R) q^(12tR). Source positions, symbols and instruction fields are all counted. The exponent a_t is independent of q. |
+| Exceptional words | `Qary.ExceptionalPartnerCount.candidatePartners_card_le`, `Qary.NonseparatedFamily.nonseparated_family_thin` | A chronological packet records two tag flags and one symbol, giving at most 4q payloads. The partner count is c_t q^(2t) L n^(2t-1), and the exceptional probability is at most twice this number divided by Q. |
+| Witnesses and discard probabilities | `Qary.VerifiedConflictGraphWitness.bounded_witness`, `Qary.PaperProbability.total_discard_le` | The complete deterministic witness theorem has the same cutoff and component bounds. With Q >= 8 q^(12t) n^(2t-1) L^b_t and sufficiently large L, the two actual discard events have total probability at most 1/3. No coverage or witness premise remains. |
+| Actual codes and the attained optimum | `Qary.CodeExistence.main_uniform`, `Qary.OptimalRedundancy.main_uniform`, `main_fin` | For each t >= 2, one K works for every finite alphabet of size q >= 2. For all sufficiently large n, the optimal redundancy is at most (2t-1) log_q n + K log_q log_q n. The threshold may depend on t and q. The optimum is the attained maximum over actual correcting subsets of the q^n words. |
+
+Two auxiliary choices simplify the formalization without changing the final
+theorem. First, it retains k = 2 ceil(log_2 n)+2 and L = 3(k+1), rather than
+using the alphabet's logarithm in the window choice. Since q >= 2, the
+unique-word estimate remains valid, and n <= 2^R still pays for the extra
+component when R > L. `Qary.RedundancyBounds` proves, for each fixed q, that
+log_q L <= 2 log_q log_q n eventually. Its q-dependent threshold absorbs the
+additive constant from changing the logarithm base.
+
+Second, the finite recovery format reserves two alphabet symbols per header
+and one symbol for every padded instruction row. With nu = 2tR bubbles and
+4nu rows, this gives q^(6nu) = q^(12tR), a looser factor than the optimized
+q^(6tR) count. The numeric fields reuse the verified binary codec, with its
+symbol field replaced by a fixed placeholder; the q-ary letters are stored
+separately and recovered by a proved round trip. No q-ary edit is interpreted
+as a binary edit.
+
+The label choice Q = 8 q^(12t) n^(2t-1) L^b_t yields an actual code C with
+q^n <= 8 Q |C|. The explicit remainder coefficient is
+K = 2 b_t + 12t + 6, where b_t = `WitnessCost.exponent t`. In both
+`main_uniform` and `main_fin`, the existential quantifier for K precedes
+the alphabet quantifier, so the statement does not hide any q-dependence
+in K. The final theorem reports only Lean's standard `propext`,
+`Classical.choice` and `Quot.sound` axioms.
+
+`Qary.Examples` checks ternary cases that require the generalized model:
+two successive substitutions that do not cancel, a recorded third-symbol
+target, and a run whose two boundary symbols differ. This extension does
+not formalize bounded bursts of edits.
