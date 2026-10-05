@@ -11,12 +11,13 @@ Statements are identified below by the LaTeX labels of the paper's source;
 the README gives the corresponding lemma numbers. The introductory
 `thm:intro` is the same result restated as `thm:main`. Comparisons with the
 paper below refer to published version 1 and the preserved binary development.
-The final section records the extension to arbitrary finite alphabets, whose
-main theorem has a remainder constant independent of the alphabet size.
+The final sections record the extensions to arbitrary finite alphabets and
+bounded substring replacements. Both have a remainder constant independent
+of the alphabet size.
 
-The formal statements use an edit model in which an edit is a single
-insertion, deletion or substitution and a code corrects at most t edits in
-total. The final theorem therefore includes the paper's deletion-only and
+The preserved binary development uses an edit model in which an edit is a
+single insertion, deletion or substitution and a code corrects at most t edits
+in total. The final theorem therefore includes the paper's deletion-only and
 insertion/deletion conclusions. The auxiliary witness cutoff is
 1 + 4tL^2 + 2tL, with threshold L >= 4t+3; both are accounted for in the
 probability proof and preserve the final asymptotic bound. Some intermediate
@@ -552,5 +553,55 @@ in K. The final theorem reports only Lean's standard `propext`,
 
 `Qary.Examples` checks ternary cases that require the generalized model:
 two successive substitutions that do not cancel, a recorded third-symbol
-target, and a run whose two boundary symbols differ. This extension does
-not formalize bounded bursts of edits.
+target, and a run whose two boundary symbols differ. These `Qary` modules
+use single-letter edits; the separate `Burst` development below treats
+bounded substring replacements.
+
+## Bounded substring replacements
+
+The `DeletionCode.Burst` development proves the same leading coefficient
+for at most t bounded bursts, for each fixed b >= 1 and t >= 2. In
+`Burst.Script`, one operation replaces a contiguous block U by V with
+|U| <= b, |V| <= b and U != V. Either block may be empty, and the two lengths
+may differ. The operation costs one regardless of either block's length.
+Successive operations act on the current word and may overlap earlier
+operations. `Burst.WithinBursts b t` bounds the number of whole operations;
+it imposes no separation condition on the channel histories.
+
+`Burst.CodeSelection.Corrects` requires that distinct codewords have no
+common output reachable by at most t such operations from each word.
+`Corrects.eq_of_common_output` states the resulting unique-decoding property.
+The optimum in `Burst.OptimalRedundancy` is the attained maximum cardinality
+over these actual correcting subsets of the q^n words.
+
+| Step | Burst theorem or definition | Verified content |
+| --- | --- | --- |
+| Actual histories and coverage | `Burst.Script`, `Burst.CatalogueCoverage.catalogueRule`, `Burst.VerifiedConflictGraphWitness.separated_coverage` | Chronological substring replacements produce the local words, path geometry, length balance and full signed spectrum sum. Separation is used in the coverage argument; histories that fail it are handled by the exceptional event. It is not assumed of correcting codes. |
+| Recovery and counting | `Burst.HeaderRecovery.transferFinite_exists`, `Burst.RecordSerialization.serialized_generating_coverage`, `Burst.ManuscriptCounting.card_bound` | Actual generating families have bounded successful decoder records. The resulting bound for underlying signed rule sets is n^c (LR)^(a_t R) q^(12btR), with c their intrinsic support-component count. |
+| Actual obstructions | `Burst.VerifiedConflictGraphWitness.bounded_witness`, `Burst.PaperProbability.total_discard_le` | Every retained vertex in a nonbipartite component supplies an independent surviving counted witness, with 2 <= R <= 1 + 2t(2L+2b+1)L. Exceptional and obstruction probabilities together are at most 1/3 at the proved parameter thresholds. |
+| Codes and optimum | `Burst.CodeExistence.main_uniform`, `Burst.OptimalRedundancy.main_uniform`, `main_fin` | For each fixed b >= 1 and t >= 2, one K works for every finite alphabet with q >= 2: eventually, optimal redundancy is at most (2t-1) log_q n + K log_q log_q n. The length threshold may depend on b, t and q. |
+
+The auxiliary parameters are k = 2 ceil(log_2 n)+2 and L = 3(k+b+1).
+`Burst.Parameters.eventually_ready` proves the required growth conditions,
+including b < k and L <= n, eventually. The final theorem uses base-q
+redundancy; `Burst.RedundancyBounds` proves the necessary change-of-base
+and logarithmic window estimates.
+
+The recovery header stores both blocks, padded to b symbols each. Transferring
+a positive-path seed back to the negative path uses at most b additional
+symbols. With nu = 2tR headers and 4nu padded instruction rows, the alphabet
+factor is q^(6bnu) = q^(12btR). The verified numeric format contributes at most
+(32L(nu+1))^(53nu), which `Burst.CountExponent.field_power_bound` absorbs using
+
+    a_t = 106*t*(32*(2*t+1)+1).
+
+Write B_t = `Burst.WitnessCost.exponent t` = 4a_t+2. The label choice
+Q = 8 q^(12bt) n^(2t-1) L^B_t yields an actual code C with q^n <= 8Q|C|.
+The explicit remainder coefficient is
+
+    K = 2*Burst.WitnessCost.exponent t + 12*b*t + 6.
+
+In both `main_uniform` and `main_fin`, K is chosen before the alphabet or q
+is quantified. Its independence of q is therefore part of the formal
+statement. These final theorems use only `propext`, `Classical.choice` and
+`Quot.sound`; no admitted proof, coverage premise, or added axiom remains.

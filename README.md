@@ -16,6 +16,11 @@ q-ary symbols, is at most (2t-1) log_q n + O_t(log_q log_q n).
 The remainder constant is independent of q; the sufficiently-large-length
 threshold may depend on both t and q.
 
+The bounded-burst extension proves the same leading coefficient for at most
+t substring replacements U -> V, with both lengths at most a fixed b >= 1.
+Either block may be empty, and successive replacements may overlap. Its
+remainder is O_{t,b}(log_q log_q n), with a constant independent of q.
+
 ## The theorem
 
 ```lean
@@ -47,6 +52,33 @@ quantifier. The original binary proof and `OptimalRedundancy.main` remain
 available unchanged. The q-ary development is in `DeletionCode/Qary/`;
 it shares alphabet-independent arithmetic, hashing and graph results with
 the binary development.
+
+## Bounded substring replacements
+
+```lean
+theorem DeletionCode.Burst.OptimalRedundancy.main_fin
+    (b t : ℕ) (hb : 1 ≤ b) (ht : 2 ≤ t) :
+    ∃ K : ℕ, ∀ q : ℕ, 2 ≤ q → ∀ᶠ n : ℕ in atTop,
+      optimalRedundancy (Fin q) b t n ≤
+        ((2 * t - 1 : ℕ) : ℝ) * Real.logb q (n : ℝ) +
+          (K : ℝ) * Real.logb q (Real.logb q (n : ℝ))
+```
+
+`Burst.Script` counts each nontrivial bounded replacement as one operation.
+`Burst.WithinBursts`, `Burst.Confusable` and `Burst.CodeSelection.Corrects`
+use the actual chronological operations, including overlapping histories.
+The optimum is the attained maximum over all codes correcting this channel.
+`Burst.OptimalRedundancy.main_uniform` quantifies over arbitrary finite
+alphabet types, with K chosen before the alphabet.
+
+The proof uses k = 2 ceil(log_2 n) + 2 and L = 3(k+b+1). Whole-burst
+recovery records cost at most q^(12btR), and the witness cutoff is
+1 + 2t(2L+2b+1)L. An explicit remainder coefficient is
+K = 2 B_t + 12bt + 6, where B_t = 4 A_t + 2 and
+A_t = 106t(32(2t+1)+1). These deliberately loose constants are verified
+in `Burst.CountExponent`, `Burst.WitnessCost` and `Burst.CodeExistence`.
+The development is in `DeletionCode/Burst/`; it reuses the checked q-ary
+support, hashing and graph machinery. The original proofs remain available.
 
 ## Building
 
@@ -86,7 +118,7 @@ lower bound on |I|, and Lemma 4.4 holds for every t >= 1. The edit version
 uses the slightly larger witness cutoff 1 + 4tL^2 + 2tL and the threshold
 L >= 4t+3; these preserve the final redundancy bound.
 [VERIFIED_LEMMAS.md](VERIFIED_LEMMAS.md) gives the exact hypotheses and
-bounds, including separate sections for the edit and finite-alphabet extensions.
+bounds, including separate sections for the edit, finite-alphabet and burst extensions.
 The finite-alphabet section records the different auxiliary window choice
 and the deliberately loose alphabet factor in the recovery-record count.
 
@@ -96,8 +128,7 @@ Lean certifies the formal statements. That each formal statement says what
 the corresponding statement of the paper says is a matter of reading the
 definitions, and is the reader's to check; the table above and
 VERIFIED_LEMMAS.md are there to make that easy. The formalization does not
-cover bounded bursts of edits, the paper's narrative, its historical comparisons,
-or its related work.
+cover the paper's narrative, its historical comparisons, or its related work.
 
 No proof uses `sorry`, and no axioms are added. The axioms reported for the
 final theorem are Lean's standard `propext`, `Classical.choice` and
