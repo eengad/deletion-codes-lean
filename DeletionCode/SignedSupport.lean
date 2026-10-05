@@ -8,15 +8,17 @@ Finite word spectra and the signed-support interface for generating families.
 The spectrum counts actual finite L-window occurrences. A bubble contributes
 positive-path counts minus negative-path counts. Vertex simplicity gives at
 most one occurrence of each gram on either path. The endpoint-intersection
-condition and unequal path lengths rule out a gram shared by both paths.
+condition, together with excluding two single-edge paths, rules out a gram
+shared by both paths.
 Vertex disjointness between bubbles of one rule then prevents cancellation.
 
 The geometric assumptions below are structural catalogue conditions: simple
-paths, common vertices only at the two aligned endpoints, unequal path lengths,
-and no shared vertex between distinct bubbles of a rule. The manuscript's
-catalogue requires the first, second, and fourth conditions; its two local word
-lengths differ by one, giving the third. This module does not construct the
-catalogue from A d^rho B, formalize linear independence, or prove the final count.
+paths, common vertices only at the two aligned endpoints, at least one path
+with more than one edge, and no shared vertex between distinct bubbles of a
+rule. The catalogue requires the first, second, and fourth conditions; its
+header length bounds give the third for all three edit kinds. Substitution
+bubbles may have equal path lengths. This module does not construct the
+catalogue from local words, formalize linear independence, or prove the final count.
 -/
 
 namespace DeletionCode.SignedSupport

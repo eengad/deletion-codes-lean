@@ -9,16 +9,17 @@ verified. The target is
 
 Statements are identified below by the LaTeX labels of the paper's source;
 the README gives the corresponding lemma numbers. The introductory
-`thm:intro` is the same result restated as `thm:main`. No statement of a
-lemma, proposition or theorem has changed since version 1; later revisions
-of the paper only clarify the prose.
+`thm:intro` is the same result restated as `thm:main`. Comparisons with the
+paper below refer to published version 1.
 
-The formal statements are for the edit model, which is stronger than the
-paper's: an edit is a single insertion, deletion or substitution, a code
-corrects t edits, and every lemma below is proved with substitutions
-included. The paper's deletion-only and insertion/deletion statements are
-special cases. The section "The edit model" at the end lists exactly what
-changes.
+The formal statements use an edit model in which an edit is a single
+insertion, deletion or substitution and a code corrects at most t edits in
+total. The final theorem therefore includes the paper's deletion-only and
+insertion/deletion conclusions. The auxiliary witness cutoff is
+1 + 4tL^2 + 2tL, with threshold L >= 4t+3; both are accounted for in the
+probability proof and preserve the final asymptotic bound. Some intermediate
+statements also drop unnecessary hypotheses. The table and the section
+"The edit model" at the end record these differences explicitly.
 
 ## Complete manuscript statements
 
@@ -33,7 +34,7 @@ changes.
 | `lem:nonsep`: The nonseparated family is thin | `NonseparatedFamily.nonseparated_family_thin` | For t >= 2, a k-unique length-n source, n >= L = 3(k+1), and Q >= 2, the actual exceptional event has probability at most 2 c_t L n^(2t-1)/Q for an explicit positive constant depending only on t. The finite partner count, reconstruction, separation-failure saving, nonzero spectrum differences, and probability union bound are derived. Partners need not be unique. The n >= L hypothesis is the paper's standing assumption, stated after equation (3) in Section 2.3. |
 | `lem:block`: Connected blocks | `ConnectedBlocks.adjoining_rule_bound` and `ConnectedBlocks.connected_block_bound` | Catalogue rules have concrete presentations by 2t bubbles with the paper's geometry and balance. Adjoining an adjacent rule increases the intrinsic component count by at most 2t-1. A nonempty rule set connected by adjacencies within that set satisfies c(B) <= (2t-1) times B.card + 1. The formal result allows t >= 1; the paper assumes t >= 2. |
 | `lem:saving`: Savings from a relation | `RelationSavings.savings_from_relation` | An actual finite set I of catalogue rules, another catalogue rule w, and a rational coordinatewise relation w = sum of a(u)u over I, with every a(u) nonzero, imply c(I) <= t times I.card + t. The result does not need the paper's extra independence, generation, or I.card >= 2 restrictions. |
-| `lem:witness`: Bounded witness | `VerifiedConflictGraphWitness.bounded_witness` | For t >= 2, Q >= 2, an additive circle hash, and a retained vertex whose component in the actual finite conflict graph is not two-colorable, derives an independent surviving generating witness and the exact counted-set predicate, with all manuscript size and component bounds. The exceptional set, separated edge traces, odd walk, catalogue coverage, and equal-bin survival are derived. No coverage premise remains. |
+| `lem:witness`: Bounded witness | `VerifiedConflictGraphWitness.bounded_witness` | For t >= 2, Q >= 2, an additive circle hash, and a retained vertex whose component in the actual finite conflict graph is not two-colorable, derives an independent surviving generating witness and the exact counted-set predicate, with 2 <= R <= 1+4tL^2+2tL, c(U) <= (2t-1)R+1, and c(U) <= (2t-1)R when R <= L. The exceptional set, separated edge traces, odd walk, catalogue coverage, and equal-bin survival are derived. No coverage premise remains. |
 | `lem:resolve`: Counting generating sets | `ManuscriptCounting.counting_generating_sets` | The concrete catalogue grammar and path restrictions, k-unique base word, R >= 1, and signed generating condition. The bound counts underlying sets of signed vectors with their intrinsic support-component count. Independence may be imposed using `filtered_card_bound`; the unrestricted result is stronger. |
 | `prop:obstruction`: Obstructions are rare | `PaperProbability.obstructions_are_rare` | For each fixed t >= 2 and all sufficiently large n, every Q >= 8*n^(2*t-1)*L^b_t and every actual k-unique word have obstruction-event probability at most 1/12. The event requires that the word is a retained graph vertex and its actual component is not two-colorable. Candidate finiteness and counts, exact survival probabilities, the geometric tail, and all logarithmic-parameter side conditions are derived; no conditioning on the random graph. |
 | `thm:main`: Optimal redundancy bound | `OptimalRedundancy.main`, with `CodeExistence.main` and `CodeExistence.eventually_exists_code` | For each fixed t >= 2, a constant K depending only on t bounds optimal redundancy by (2*t-1)*log_2(n) + K*log_2(log_2(n)) for all sufficiently large n. The optimum is the attained maximum cardinality over actual correcting subsets of the n-bit word space, with its minimum-redundancy interpretation proved. The code-existence form produces nonempty finite codes correcting at most t genuine insertions, deletions and substitutions in total, with explicit K = 6*b_t+6 and b_t = 4*a_t+2. No large-code, probability, or asymptotic side condition is an input to these final theorems. |
@@ -242,7 +243,7 @@ The following results derive the scan and both stopping cases:
   after insertion must occur in the new rule's block: blocks excluding that
   rule are unchanged. `BlockAdjunction` identifies this block with the added
   rule and the old blocks meeting it. `WitnessCases.large_block_case` proves
-  L < U.card <= 1+4tL^2 and c(U) <= (2t-1)*U.card + 1, using actual catalogue
+  L < U.card <= 1+4tL^2+2tL and c(U) <= (2t-1)*U.card + 1, using actual catalogue
   vertex bounds and the old-block size invariant.
 - `FiniteGenerating` proves that retaining whole blocks preserves the
   actual generating order and rational independence in both cases.
@@ -344,9 +345,12 @@ The vectors and catalogue are fixed before sampling, as in the paper.
 matched-column anchors, orientations, and inserted bits. An executable decoder
 copies matched gaps and performs the recorded edits on the source; Lean proves
 that it returns the actual trace target. Actual edit columns have distinct
-record indices even when their anchors coincide. For a balanced trace with
-d >= 1 edits of each kind, all anchors are at most n-d and hence belong to Fin n.
-Zero-edit traces have equal source and target and cannot witness an exceptional partner.
+record indices even when their anchors coincide. A balanced trace with d
+deletions, d insertions and s substitutions has n-d-s matched columns, so
+every anchor is at most n-d-s. Distinct source and target force d+s >= 1,
+and hence all anchors belong to Fin n, including when d=0 and s>0.
+Zero-edit traces have equal source and target and cannot witness an
+exceptional partner.
 
 `CloseAnchorCount.bad_card_le` counts r-tuples with an anchor near a boundary
 or another anchor by omitting the constrained coordinate and reconstructing it
@@ -421,9 +425,9 @@ it to a largest actual hash-label class and projects the vertices to words.
 The projection is injective; all counts are of distinct finite words.
 
 The correction predicate is literal edit correction: distinct codewords have
-no common output obtainable by scripts with at most t single insertions and
-deletions in total from each word. `CodeSelection.Corrects.eq_of_common_output`
-states the resulting unique-decoding property. Deletion-only scripts are
+no common output obtainable by scripts with at most t single insertions,
+deletions and substitutions in total from each word.
+`CodeSelection.Corrects.eq_of_common_output` states the resulting unique-decoding property. Deletion-only scripts are
 included, so no unformalized equivalence with deletion correction is needed.
 
 With the integer Q = 8*n^(2*t-1)*L^b_t, `CodeExistence.exists_large_code` derives

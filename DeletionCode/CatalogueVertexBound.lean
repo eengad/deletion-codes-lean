@@ -7,8 +7,9 @@ import Mathlib.Tactic.Ring
 A vertex bound for the actual signed support of one catalogue rule. A bubble's
 two paths share their initial vertex. Naming every negative-path vertex and
 every positive-path vertex except its initial one therefore covers its full
-vertex set using at most 2L names. For 2t bubbles this gives at most 4tL actual
-incident vertices. The bound deliberately allows repeated names and vertices.
+vertex set using at most 2L+1 names. For 2t bubbles this gives at most
+2t(2L+1) actual incident vertices. This deliberately loose bound counts the
+shared terminal vertex twice and also allows other repeated names and vertices.
 -/
 namespace DeletionCode.CatalogueVertexBound
 

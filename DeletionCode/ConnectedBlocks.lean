@@ -24,8 +24,8 @@ theorem RuleAdjacent.symm {L : ℕ} {w u : Gram L → ℤ}
   exact ⟨v, hu, hw⟩
 
 /-- A concrete presentation of a catalogue vector by exactly 2t bubbles.
-The local words and all catalogue geometry are explicit, including t bubbles
-in each orientation. -/
+The local words and all catalogue geometry are explicit, with equally many
+deletion and insertion bubbles and all remaining bubbles substitutions. -/
 def CatalogueRule (t k : ℕ) (w : Gram (windowLength k) → ℤ) : Prop :=
   ∃ words : Fin (2 * t) → BubbleWord k,
     ValidCatalogue words (fun _ => (0 : Fin 1)) ∧

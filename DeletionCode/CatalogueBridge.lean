@@ -3,10 +3,11 @@ import DeletionCode.SignedRuleCount
 
 /-!
 The manuscript's local-word grammar and catalogue geometry imply the signed
-rule-count hypotheses. The unequal path lengths are derived from the grammar's
-header bounds; neither the edit identity nor support noncancellation is assumed.
-The optional balanced class also requires t bubbles of each orientation per
-rule and exactly R distinct resulting rules. Linear independence can further
+rule-count hypotheses. The header bounds exclude two single-edge paths, including
+for substitution bubbles whose paths have equal length. The edit identity and
+support noncancellation are derived. The optional balanced class requires d
+deletion bubbles, d insertion bubbles and s substitution bubbles with 2d+s=2t
+per rule, and exactly R distinct resulting rules. Linear independence can further
 restrict this class and is unnecessary for the bound proved here.
 -/
 

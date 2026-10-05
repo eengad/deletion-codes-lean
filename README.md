@@ -68,14 +68,14 @@ lake build
 | Proposition 6.1, obstructions are rare | `PaperProbability.obstructions_are_rare` |
 | Theorems 1.1 and 6.2 | `OptimalRedundancy.main`, with `CodeExistence.main` and `CodeExistence.eventually_exists_code` |
 
-Where a formal statement is not word for word the paper's, it is the more
-general one: it drops a hypothesis that the proof turned out not to need, so
-the paper's statement follows as a special case. For example, Lemma 4.5 is
-proved without the side condition |I| >= 2, Lemma 4.4 for every t >= 1, and
-the final theorem for t insertions, deletions and substitutions in total
-rather than deletions only. [VERIFIED_LEMMAS.md](VERIFIED_LEMMAS.md) gives
-the exact hypotheses of every row, and its last section lists what the edit
-model changes in the proof.
+The table uses the published version 1 numbering. The formalization extends
+the error model to t insertions, deletions and substitutions in total. Some
+intermediate results also drop unnecessary hypotheses: Lemma 4.5 needs no
+lower bound on |I|, and Lemma 4.4 holds for every t >= 1. The edit version
+uses the slightly larger witness cutoff 1 + 4tL^2 + 2tL and the threshold
+L >= 4t+3; these preserve the final redundancy bound.
+[VERIFIED_LEMMAS.md](VERIFIED_LEMMAS.md) gives the exact hypotheses and
+bounds, and its last section lists the changes for the edit model.
 
 ## What is not checked
 

@@ -6,9 +6,9 @@ import Mathlib.Combinatorics.SimpleGraph.Basic
 The finite conflict graph on actual binary words. Its vertices are k-unique
 words after removal of the exceptional set defined by short or nonseparated
 equal-label alignments. Consequently every oriented edge admits an actual
-trace with exactly t deletions and t insertions, separated in matched-column
-coordinates. Converting such traces to catalogue presentations is a separate
-interface and is not an assumption of the result below.
+trace with d deletions, d insertions and s substitutions, where 2d+s=2t,
+separated in matched-column coordinates. Converting such traces to catalogue
+presentations is a separate interface and is not an assumption of the result below.
 -/
 namespace DeletionCode.FiniteConflictGraph
 
