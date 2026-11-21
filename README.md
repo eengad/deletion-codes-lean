@@ -8,33 +8,80 @@ A Lean 4 formalization of the main theorem of
 > substring counts*, [arXiv:2609.19493](https://arxiv.org/abs/2609.19493),
 > 2026.
 
-The paper proves that binary codes of length n correcting t >= 2 deletions
-exist with redundancy (2t-1) log2 n + O_t(log2 log2 n), improving the leading
-coefficient 2t of Levenshtein's 1965 bound. This repository checks that proof
-in Lean, from the definitions of words and edits up to the final bound.
+This development proves Theorems 1.1 and 1.2 of
+[arXiv v2](https://arxiv.org/abs/2609.19493v2) by extending the circle-hash
+argument from v1. The v2 manuscript gives a proof using binary linear hashing.
+
+The bound holds over every fixed finite alphabet of size
+q >= 2, for codes correcting any t >= 2 edits in total, where an edit is a
+single insertion, deletion or substitution. Their redundancy, measured in
+q-ary symbols, is at most (2t-1) log_q n + O_t(log_q log_q n).
+The remainder constant is independent of q; the sufficiently-large-length
+threshold may depend on both t and q.
+
+The bounded-burst extension proves the same leading coefficient for at most
+t substring replacements U -> V, with both lengths at most a fixed b >= 1.
+Either block may be empty, and successive replacements may overlap. Its
+remainder is O_{t,b}(log_q log_q n), with a constant independent of q.
 
 ## The theorem
 
 ```lean
-theorem DeletionCode.OptimalRedundancy.main (t : ℕ) (ht : 2 ≤ t) :
-    ∃ K : ℕ, ∀ᶠ n : ℕ in atTop,
-      optimalRedundancy t n ≤
-        ((2 * t - 1 : ℕ) : ℝ) * Real.logb 2 (n : ℝ) +
-          (K : ℝ) * Real.logb 2 (Real.logb 2 (n : ℝ))
+theorem DeletionCode.Qary.OptimalRedundancy.main_fin (t : ℕ) (ht : 2 ≤ t) :
+    ∃ K : ℕ, ∀ q : ℕ, 2 ≤ q → ∀ᶠ n : ℕ in atTop,
+      optimalRedundancy (Fin q) t n ≤
+        ((2 * t - 1 : ℕ) : ℝ) * Real.logb q (n : ℝ) +
+          (K : ℝ) * Real.logb q (Real.logb q (n : ℝ))
 ```
 
-Here `optimalRedundancy t n = n - log2 (optimalCodeSize t n)`, and
-`optimalCodeSize t n` is the maximum cardinality over all subsets of the
-n-bit words in which no two distinct words are confusable. Two words are
+Here `optimalRedundancy α t n = n - log_q (optimalCodeSize α t n)`, with
+q the cardinality of α. The optimal size is the attained maximum over all
+subsets of the length-n words in which no two distinct words are confusable. Two words are
 confusable when some output can be reached from each of them by at most t
-single insertions and deletions in total (`EditAlignment.Script`,
-`EditAlignment.WithinEdits`, `FiniteConflictGraph.Confusable`,
-`CodeSelection.Corrects`). This is at least as strong as correcting t
-deletions. The constant is explicit, with no attempt at optimisation:
-K = 6 b_t + 6, where b_t = 4 a_t + 2 (`WitnessCost.exponent`) and
+single insertions, deletions and substitutions in total
+(`Qary.EditAlignment.Script`, `Qary.EditAlignment.WithinEdits`,
+`Qary.FiniteConflictGraph.Confusable`, `Qary.CodeSelection.Corrects`). This is at
+least as strong as correcting t deletions, and at least as strong as
+correcting t insertions and deletions. The constant is explicit, with no
+attempt at optimisation:
+K = 2 b_t + 12t + 6, where b_t = 4 a_t + 2 (`WitnessCost.exponent`) and
 a_t = 100 t (32 t + 17) is the exponent in the count of Lemma 5.1
 (`CountExponent.exponent`). The result is an existence statement; no encoder
 or decoder is asserted.
+
+`Qary.OptimalRedundancy.main_uniform` states the same result for arbitrary
+finite alphabet types, with the existential K before the alphabet
+quantifier. The original binary proof and `OptimalRedundancy.main` remain
+available unchanged. The q-ary development is in `DeletionCode/Qary/`;
+it shares alphabet-independent arithmetic, hashing and graph results with
+the binary development.
+
+## Bounded substring replacements
+
+```lean
+theorem DeletionCode.Burst.OptimalRedundancy.main_fin
+    (b t : ℕ) (hb : 1 ≤ b) (ht : 2 ≤ t) :
+    ∃ K : ℕ, ∀ q : ℕ, 2 ≤ q → ∀ᶠ n : ℕ in atTop,
+      optimalRedundancy (Fin q) b t n ≤
+        ((2 * t - 1 : ℕ) : ℝ) * Real.logb q (n : ℝ) +
+          (K : ℝ) * Real.logb q (Real.logb q (n : ℝ))
+```
+
+`Burst.Script` counts each nontrivial bounded replacement as one operation.
+`Burst.WithinBursts`, `Burst.Confusable` and `Burst.CodeSelection.Corrects`
+use the actual chronological operations, including overlapping histories.
+The optimum is the attained maximum over all codes correcting this channel.
+`Burst.OptimalRedundancy.main_uniform` quantifies over arbitrary finite
+alphabet types, with K chosen before the alphabet.
+
+The proof uses k = 2 ceil(log_2 n) + 2 and L = 3(k+b+1). Whole-burst
+recovery records cost at most q^(12btR), and the witness cutoff is
+1 + 2t(2L+2b+1)L. An explicit remainder coefficient is
+K = 2 B_t + 12bt + 6, where B_t = 4 A_t + 2 and
+A_t = 106t(32(2t+1)+1). These deliberately loose constants are verified
+in `Burst.CountExponent`, `Burst.WitnessCost` and `Burst.CodeExistence`.
+The development is in `DeletionCode/Burst/`; it reuses the checked q-ary
+support, hashing and graph machinery. The original proofs remain available.
 
 ## Building
 
@@ -64,13 +111,19 @@ lake build
 | Proposition 6.1, obstructions are rare | `PaperProbability.obstructions_are_rare` |
 | Theorems 1.1 and 6.2 | `OptimalRedundancy.main`, with `CodeExistence.main` and `CodeExistence.eventually_exists_code` |
 
-Where a formal statement is not word for word the paper's, it is the more
-general one: it drops a hypothesis that the proof turned out not to need, so
-the paper's statement follows as a special case. For example, Lemma 4.5 is
-proved without the side condition |I| >= 2, Lemma 4.4 for every t >= 1, and
-the final theorem for t insertions and deletions in total rather than
-deletions only. [VERIFIED_LEMMAS.md](VERIFIED_LEMMAS.md) gives the exact
-hypotheses of every row.
+The table describes the preserved binary development and uses the published
+version 1 numbering. Its `Qary` counterparts extend the word, edit, recovery,
+counting, witness and code-existence arguments to finite alphabets.
+The formalization extends
+the error model to t insertions, deletions and substitutions in total. Some
+intermediate results also drop unnecessary hypotheses: Lemma 4.5 needs no
+lower bound on |I|, and Lemma 4.4 holds for every t >= 1. The edit version
+uses the slightly larger witness cutoff 1 + 4tL^2 + 2tL and the threshold
+L >= 4t+3; these preserve the final redundancy bound.
+[VERIFIED_LEMMAS.md](VERIFIED_LEMMAS.md) gives the exact hypotheses and
+bounds, including separate sections for the edit, finite-alphabet and burst extensions.
+The finite-alphabet section records the different auxiliary window choice
+and the deliberately loose alphabet factor in the recovery-record count.
 
 ## What is not checked
 

@@ -35,13 +35,15 @@ noncomputable def graph {n k : ℕ} (t Q : ℕ) (H : Spectrum k →+ UnitAddCirc
     SimpleGraph (Vertex (n := n) t Q H) :=
   FiniteConflictGraph.graph t k (wordLabel Q H)
 
-/-- The precise coverage interface, proved in VerifiedConflictGraphWitness: a k-unique source and an actual
-separated trace with t edits of each kind produce a concrete catalogue rule.
+/-- The precise coverage interface, proved in VerifiedConflictGraphWitness: a
+k-unique source and an actual separated trace with equally many deletions and
+insertions and cost exactly 2t produce a concrete catalogue rule.
 The target word is not required to be unique. -/
 def SeparatedCoverage (t k n : ℕ) : Prop :=
   ∀ (x y : Bits n), KUnique (padBits x) n k → ∀ trace : Trace,
     trace.source = List.ofFn x → trace.target = List.ofFn y →
-    trace.deletions = t → trace.insertions = t →
+    trace.deletions = trace.insertions →
+    2 * trace.deletions + trace.substitutions = 2 * t →
     FiniteConflictGraph.Separated (4 * windowLength k) trace →
     CatalogueRule t k (spectrum k y - spectrum k x)
 
@@ -51,8 +53,8 @@ theorem edge_catalogue {t k n Q : ℕ} {H : Spectrum k →+ UnitAddCircle}
     (hcoverage : SeparatedCoverage t k n)
     {x y : Vertex (n := n) t Q H} (hxy : (graph t Q H).Adj x y) :
     CatalogueRule t k (spectrum k y.val - spectrum k x.val) := by
-  obtain ⟨trace, hs, ht, hd, hi, hsep⟩ := FiniteConflictGraph.edge_separated_trace hxy
-  exact hcoverage x.val y.val (FiniteConflictGraph.vertex_unique x) trace hs ht hd hi hsep
+  obtain ⟨trace, hs, ht, hbal, hsum, hsep⟩ := FiniteConflictGraph.edge_separated_trace hxy
+  exact hcoverage x.val y.val (FiniteConflictGraph.vertex_unique x) trace hs ht hbal hsum hsep
 
 /-- Equal circle bins imply actual hash survival for each catalogue edge.
 Neither survival nor a norm estimate is assumed of graph edges. -/

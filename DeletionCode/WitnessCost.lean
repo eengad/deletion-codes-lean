@@ -31,16 +31,17 @@ theorem linear_le_power (c R : ℕ) : c * R + 1 ≤ (c + 1) ^ R := by
         _ = (c + 1) ^ (R + 1) := (pow_succ _ _).symm
 
 /-- Every allowed bounded witness size is at most L cubed. -/
-theorem size_le_cube (t L R : ℕ) (hL : 4 * t + 2 ≤ L)
-    (hR : R ≤ 1 + 4 * t * L ^ 2) : R ≤ L ^ 3 := by
+theorem size_le_cube (t L R : ℕ) (hL : 4 * t + 3 ≤ L)
+    (hR : R ≤ 1 + 4 * t * L ^ 2 + 2 * t * L) : R ≤ L ^ 3 := by
   have hsq : 1 ≤ L ^ 2 := one_le_pow₀ (by omega)
+  have hlin : 2 * t * L ≤ 2 * t * L ^ 2 := by nlinarith
   calc
-    R ≤ 1 + 4 * t * L ^ 2 := hR
-    _ ≤ (4 * t + 1) * L ^ 2 := by nlinarith
+    R ≤ 1 + 4 * t * L ^ 2 + 2 * t * L := hR
+    _ ≤ (4 * t + 2 + 1) * L ^ 2 := by nlinarith
     _ ≤ L * L ^ 2 := Nat.mul_le_mul_right _ (by omega)
     _ = L ^ 3 := by ring
 
-theorem linear_factor_le (t L R : ℕ) (hL : 4 * t + 2 ≤ L) :
+theorem linear_factor_le (t L R : ℕ) (hL : 4 * t + 3 ≤ L) :
     2 * t * R + 1 ≤ L ^ R := by
   calc
     _ ≤ (2 * t + 1) ^ R := linear_le_power (2 * t) R
@@ -48,8 +49,8 @@ theorem linear_factor_le (t L R : ℕ) (hL : 4 * t + 2 ≤ L) :
 
 /-- All non-position factors in the paper's bounded-witness count fit into
 L^(b_t R), with b_t explicit. This also holds for R = 0 and R = 1. -/
-theorem cost_le (t L R : ℕ) (hL : 4 * t + 2 ≤ L)
-    (hR : R ≤ 1 + 4 * t * L ^ 2) :
+theorem cost_le (t L R : ℕ) (hL : 4 * t + 3 ≤ L)
+    (hR : R ≤ 1 + 4 * t * L ^ 2 + 2 * t * L) :
     2 ^ R * (2 * t * R + 1) * (L * R) ^ (CountExponent.exponent t * R) ≤
       L ^ (exponent t * R) := by
   have htwo : 2 ^ R ≤ L ^ R := Nat.pow_le_pow_left (by omega) R

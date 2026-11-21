@@ -19,6 +19,7 @@ def Inside (e : Edit) (start len : ℕ) : Prop :=
   | .unchanged => True
   | .delete pos => start ≤ pos ∧ pos < start + len
   | .insert pos _ => start ≤ pos ∧ pos ≤ start + len
+  | .substitute pos => start ≤ pos ∧ pos < start + len
 
 theorem local_output_bound (e : Edit) (start len n : ℕ)
     (he : Inside e start len) (hbound : start + len ≤ n) :
@@ -53,6 +54,14 @@ theorem origin_in_source_interval (e : Edit) (start len i r : ℕ)
           simpa only [Edit.origin, ite_eq_right hcut, ite_eq_right heq,
             Option.some.injEq] using hr
         omega
+  | substitute pos =>
+    change start ≤ pos ∧ pos < start + len at he
+    change i < start + len at hend
+    by_cases heq : i = pos
+    · simp only [Edit.origin, ite_eq_left heq, reduceCtorEq] at hr
+    · have hir : i = r := by
+        simpa only [Edit.origin, ite_eq_right heq, Option.some.injEq] using hr
+      omega
 
 /-- No equal (L-1)-windows arise from changes in disjoint source intervals.
 This includes either side of either local replacement, by using unchanged

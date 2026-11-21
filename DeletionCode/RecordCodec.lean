@@ -29,34 +29,52 @@ def orientationCode (orientation : Orientation) : ℕ :=
   match orientation with
   | .deletion => 0
   | .insertion => 1
+  | .substitution => 2
 
 theorem bitCode_le (bit : Bool) : bitCode bit ≤ 1 := by cases bit <;> decide
 
-theorem orientationCode_le (orientation : Orientation) : orientationCode orientation ≤ 1 := by
+theorem orientationCode_le (orientation : Orientation) : orientationCode orientation ≤ 2 := by
   cases orientation <;> decide
 
 def encodeHeader (L : ℕ) (header : Header)
-    (hrho0 : 1 ≤ header.rho) (hrhoL : header.rho ≤ L) : Fin (4 * L) :=
-  ⟨4 * (header.rho - 1) + 2 * orientationCode header.orientation + bitCode header.bit, by
+    (hrho0 : 1 ≤ header.rho) (hrhoL : header.rho ≤ L) : Fin (6 * L) :=
+  ⟨6 * (header.rho - 1) + 2 * orientationCode header.orientation + bitCode header.bit, by
     have ho := orientationCode_le header.orientation
     have hb := bitCode_le header.bit
     omega⟩
 
-def decodeHeader {L : ℕ} (code : Fin (4 * L)) : Header where
-  rho := code.val / 4 + 1
-  orientation := if code.val % 4 < 2 then .deletion else .insertion
+def decodeOrientation (code : ℕ) : Orientation :=
+  if code % 6 < 2 then .deletion else if code % 6 < 4 then .insertion else .substitution
+
+def decodeHeader {L : ℕ} (code : Fin (6 * L)) : Header where
+  rho := code.val / 6 + 1
+  orientation := decodeOrientation code.val
   bit := code.val % 2 == 1
 
 theorem decode_encodeHeader (L : ℕ) (header : Header)
     (hrho0 : 1 ≤ header.rho) (hrhoL : header.rho ≤ L) :
     decodeHeader (encodeHeader L header hrho0 hrhoL) = header := by
-  cases header with
-  | mk orientation rho bit =>
-    cases orientation <;> cases bit <;>
-      simp [decodeHeader, encodeHeader, orientationCode, bitCode, Nat.add_mod, Nat.mul_mod]
-    all_goals
-      dsimp at hrho0 hrhoL
-      omega
+  obtain ⟨orientation, rho, bit⟩ := header
+  dsimp at hrho0 hrhoL
+  have ho := orientationCode_le orientation
+  have hb := bitCode_le bit
+  have hmod6 : (6 * (rho - 1) + 2 * orientationCode orientation + bitCode bit) % 6
+      = 2 * orientationCode orientation + bitCode bit := by omega
+  have hmod2 : (6 * (rho - 1) + 2 * orientationCode orientation + bitCode bit) % 2
+      = bitCode bit := by omega
+  have hdiv : (6 * (rho - 1) + 2 * orientationCode orientation + bitCode bit) / 6 + 1
+      = rho := by omega
+  simp only [decodeHeader, Header.mk.injEq]
+  refine ⟨?_, ?_, ?_⟩
+  · show decodeOrientation (6 * (rho - 1) + 2 * orientationCode orientation + bitCode bit)
+        = orientation
+    unfold decodeOrientation
+    rw [hmod6]
+    cases orientation <;> cases bit <;> rfl
+  · exact hdiv
+  · show ((6 * (rho - 1) + 2 * orientationCode orientation + bitCode bit) % 2 == 1) = bit
+    rw [hmod2]
+    cases bit <;> rfl
 
 abbrev Row (L ν : ℕ) := Fin 12 → Fin (fieldBound L ν)
 

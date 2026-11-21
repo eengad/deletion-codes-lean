@@ -6,7 +6,10 @@ Endpoint-only intersections of the actual local words A d^rho B and
 A d^(rho-1) B. Opposite flank bits exclude interior matches once a common
 surviving source letter fixes the displacement. For actual same-start
 substrings of a source and its deletion or insertion, rigidity derives that
-displacement, so it is not an assumption of the final results.
+displacement, so it is not an assumption of the final results. For a
+substitution the two words A d B and A (1-d) B have equal length, rigidity
+gives displacement zero, and the flipped letter itself excludes every
+interior common window, so no flank-bit condition is needed.
 -/
 
 namespace DeletionCode.BubbleEndpoints
@@ -209,10 +212,92 @@ theorem insertion_endpoints {n k : ℕ} (hk : 1 ≤ k) (bubble : BubbleWord k)
   exact endpoints_of_displacement bubble hleft hright a b ha hb hag
     (insertion_window_displacement hk x hx pos bit hpos s a b (by omega) (by omega) hglobal)
 
+/-- A shared surviving source letter in a source/substitution pair forces
+equal offsets: the substituted position has no source origin. -/
+theorem substitution_window_displacement {n k : ℕ} (hk : 1 ≤ k) (x : Letters)
+    (hx : KUnique x n k) (pos : ℕ) (hpos : pos < n) (s a b : ℕ)
+    (ha : s + a + (windowLength k - 1) ≤ n)
+    (hb : s + b + (windowLength k - 1) ≤ n)
+    (hag : Agree x (s + a) (flipAt x pos) (s + b) (windowLength k - 1)) :
+    a = b := by
+  obtain ⟨r, u, _, _, hsource⟩ := EditRigidity.shared_source_letters hk x hx
+    .unchanged (.substitute pos) trivial hpos (s + a) (s + b) ha hb hag
+  have hfirst := (hsource 0 (by omega)).1
+  have hsecond := (hsource 0 (by omega)).2
+  simp only [Edit.origin, Nat.add_zero, Option.some.injEq] at hfirst
+  by_cases heq : s + b + r = pos
+  · simp only [Edit.origin, Nat.add_zero, ite_eq_left heq, reduceCtorEq] at hsecond
+  · simp only [Edit.origin, Nat.add_zero, ite_eq_right heq, Option.some.injEq] at hsecond
+    omega
+
+/-- With displacement zero, every common window other than the two
+endpoint windows contains the flipped letter at offset L-1. -/
+theorem substitution_endpoints_of_displacement {k : ℕ} (bubble : BubbleWord k) (a b : ℕ)
+    (ha : a ≤ bubble.longWord.length - windowLength k + 1)
+    (hag : Agree (listLetters bubble.longWord) a
+      (listLetters bubble.flipWord) b (windowLength k - 1))
+    (hdis : a = b) :
+    (a = 0 ∧ b = 0) ∨
+      (a = bubble.longWord.length - windowLength k + 1 ∧
+        b = bubble.flipWord.length - windowLength k + 1) := by
+  subst hdis
+  have hlo := bubble.rho_lower
+  have hhi := bubble.rho_upper
+  have hlong : bubble.longWord.length = 2 * windowLength k - bubble.rho := by
+    simpa only [longLength, BubbleWord.header] using bubble.longWord_length
+  have hflip : bubble.flipWord.length = 2 * windowLength k - bubble.rho := by
+    simpa only [longLength, BubbleWord.header] using bubble.flipWord_length
+  have hL : windowLength k = 3 * (k + 1) := rfl
+  have hne : bubble.bit ≠ !bubble.bit := by cases bubble.bit <;> decide
+  by_cases ha0 : a = 0
+  · exact Or.inl ⟨ha0, ha0⟩
+  by_cases hin : a ≤ windowLength k - 1
+  · exfalso
+    have hoff : windowLength k - 1 - a < windowLength k - 1 := by omega
+    have hindex : a + (windowLength k - 1 - a) = editOffset k := by
+      unfold editOffset
+      omega
+    have hbits := hag _ hoff
+    rw [hindex, bubble.header_bit, ← bubble.flip_longWord, flipAt_at, bubble.header_bit] at hbits
+    exact hne hbits
+  · right
+    omega
+
+/-- The longer source word and its flipped version at the same position in
+a k-unique source and its substitution share only their endpoint vertices.
+No flank-bit hypothesis is used. -/
+theorem substitution_endpoints {n k : ℕ} (hk : 1 ≤ k) (bubble : BubbleWord k)
+    (x : Letters) (hx : KUnique x n k) (pos : ℕ) (hpos : pos < n) (s : ℕ)
+    (hlength : s + bubble.longWord.length ≤ n)
+    (hflength : s + bubble.flipWord.length ≤ n)
+    (hlong : Agree (listLetters bubble.longWord) 0 x s bubble.longWord.length)
+    (hflip : Agree (listLetters bubble.flipWord) 0 (flipAt x pos) s bubble.flipWord.length)
+    (a b : ℕ) (ha : a ≤ bubble.longWord.length - windowLength k + 1)
+    (hb : b ≤ bubble.flipWord.length - windowLength k + 1)
+    (hag : Agree (listLetters bubble.longWord) a
+      (listLetters bubble.flipWord) b (windowLength k - 1)) :
+    (a = 0 ∧ b = 0) ∨
+      (a = bubble.longWord.length - windowLength k + 1 ∧
+        b = bubble.flipWord.length - windowLength k + 1) := by
+  have hlo := bubble.rho_lower
+  have hhi := bubble.rho_upper
+  have hlonglen : bubble.longWord.length = 2 * windowLength k - bubble.rho := by
+    simpa only [longLength, BubbleWord.header] using bubble.longWord_length
+  have hfliplen : bubble.flipWord.length = 2 * windowLength k - bubble.rho := by
+    simpa only [longLength, BubbleWord.header] using bubble.flipWord_length
+  have hL : windowLength k = 3 * (k + 1) := rfl
+  have halocal : a + (windowLength k - 1) ≤ bubble.longWord.length := by omega
+  have hblocal : b + (windowLength k - 1) ≤ bubble.flipWord.length := by omega
+  have hglobal := transfer_equal_windows _ _ _ _ s a b _ _ _ hlong hflip halocal hblocal hag
+  exact substitution_endpoints_of_displacement bubble a b ha hag
+    (substitution_window_displacement hk x hx pos hpos s a b (by omega) (by omega) hglobal)
+
 #print axioms endpoints_of_displacement
 #print axioms deletion_window_displacement
 #print axioms insertion_window_displacement
+#print axioms substitution_window_displacement
 #print axioms deletion_endpoints
 #print axioms insertion_endpoints
+#print axioms substitution_endpoints
 
 end DeletionCode.BubbleEndpoints

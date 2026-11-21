@@ -132,11 +132,36 @@ theorem insertion_vertices_injective {n k : ℕ} (hk : 1 ≤ k) (bubble : Bubble
     (local_word_unique hk x hx (.insert pos bit) hpos bubble.longWord s hlength hlong)
     (local_word_unique hk x hx .unchanged trivial bubble.shortWord s hslength hshort)
 
+/-- The longer source substring and its flipped substitution substring
+both spell simple paths; both have the same length 2L-rho. -/
+theorem substitution_vertices_injective {n k : ℕ} (hk : 1 ≤ k) (bubble : BubbleWord k)
+    (x : Letters) (hx : KUnique x n k) (pos : ℕ) (hpos : pos < n) (s : ℕ)
+    (hlength : s + bubble.longWord.length ≤ n)
+    (hflength : s + bubble.flipWord.length ≤ n)
+    (hlong : Agree (listLetters bubble.longWord) 0 x s bubble.longWord.length)
+    (hflip : Agree (listLetters bubble.flipWord) 0 (flipAt x pos) s bubble.flipWord.length) :
+    Function.Injective (fun i : Fin (bubble.longWord.length - windowLength k + 2) =>
+      SpectrumPath.vertexAt (listLetters bubble.longWord) (windowLength k) i.val) ∧
+    Function.Injective (fun i : Fin (bubble.flipWord.length - windowLength k + 2) =>
+      SpectrumPath.vertexAt (listLetters bubble.flipWord) (windowLength k) i.val) := by
+  have hlo := bubble.rho_lower
+  have hhi := bubble.rho_upper
+  have hlonglen : bubble.longWord.length = 2 * windowLength k - bubble.rho := by
+    simpa only [longLength, BubbleWord.header] using bubble.longWord_length
+  have hfliplen : bubble.flipWord.length = 2 * windowLength k - bubble.rho := by
+    simpa only [longLength, BubbleWord.header] using bubble.flipWord_length
+  have hL : windowLength k = 3 * (k + 1) := rfl
+  exact ⟨local_vertex_injective hk x hx .unchanged trivial bubble.longWord s hlength hlong
+      (by omega),
+    local_vertex_injective hk x hx (.substitute pos) hpos bubble.flipWord s hflength hflip
+      (by omega)⟩
+
 #print axioms substring_unique
 #print axioms local_word_unique
 #print axioms local_vertex_injective
 #print axioms bubble_vertices_injective
 #print axioms deletion_vertices_injective
 #print axioms insertion_vertices_injective
+#print axioms substitution_vertices_injective
 
 end DeletionCode.BubblePathSimplicity
