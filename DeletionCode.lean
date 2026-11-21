@@ -127,6 +127,8 @@ import DeletionCode.GoodWordBridge
 import DeletionCode.RedundancyBounds
 import DeletionCode.CodeExistence
 import DeletionCode.OptimalRedundancy
+import DeletionCode.Qary
+import DeletionCode.Burst
 
 /-! The full upper-bound proof: eleven manuscript lemmas, the obstruction
 proposition, and the final code-existence and optimal-redundancy theorems. -/

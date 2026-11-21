@@ -8,15 +8,17 @@ Finite word spectra and the signed-support interface for generating families.
 The spectrum counts actual finite L-window occurrences. A bubble contributes
 positive-path counts minus negative-path counts. Vertex simplicity gives at
 most one occurrence of each gram on either path. The endpoint-intersection
-condition and unequal path lengths rule out a gram shared by both paths.
+condition, together with excluding two single-edge paths, rules out a gram
+shared by both paths.
 Vertex disjointness between bubbles of one rule then prevents cancellation.
 
 The geometric assumptions below are structural catalogue conditions: simple
-paths, common vertices only at the two aligned endpoints, unequal path lengths,
-and no shared vertex between distinct bubbles of a rule. The manuscript's
-catalogue requires the first, second, and fourth conditions; its two local word
-lengths differ by one, giving the third. This module does not construct the
-catalogue from A d^rho B, formalize linear independence, or prove the final count.
+paths, common vertices only at the two aligned endpoints, at least one path
+with more than one edge, and no shared vertex between distinct bubbles of a
+rule. The catalogue requires the first, second, and fourth conditions; its
+header length bounds give the third for all three edit kinds. Substitution
+bubbles may have equal path lengths. This module does not construct the
+catalogue from local words, formalize linear independence, or prove the final count.
 -/
 
 namespace DeletionCode.SignedSupport
@@ -74,7 +76,7 @@ structure BubbleGeometry {B : Type*} (F : Family B) (L : ℕ) : Prop where
   endpoints : ∀ b i j, i ≤ F.extra b false + 1 → j ≤ F.extra b true + 1 →
     SupportComponents.vertex F L b false i = SupportComponents.vertex F L b true j →
       (i = 0 ∧ j = 0) ∨ (i = F.extra b false + 1 ∧ j = F.extra b true + 1)
-  differentLengths : ∀ b, F.extra b false ≠ F.extra b true
+  notBothSingle : ∀ b, F.extra b false ≠ 0 ∨ F.extra b true ≠ 0
 
 theorem gram_injective_of_simple {B : Type*} (F : Family B) (L : ℕ)
     (H : BubbleGeometry F L) (b : B) (side : Bool) :
@@ -88,7 +90,7 @@ theorem gram_injective_of_simple {B : Type*} (F : Family B) (L : ℕ)
   exact Fin.ext (congrArg (fun z : Fin (F.extra b side + 2) => z.val) hindices)
 
 /-- A shared edge would force both paths to consist of the same single edge,
-contradicting their unequal lengths. -/
+which the geometry excludes. -/
 theorem no_common_bubble_gram {B : Type*} (F : Family B) (L : ℕ)
     (H : BubbleGeometry F L) (b : B) (g : Gram L)
     (hn : g ∈ windowSet (F.path b false) L (F.extra b false))
@@ -113,7 +115,9 @@ theorem no_common_bubble_gram {B : Type*} (F : Family B) (L : ℕ)
     (gram_eq_target_vertices F L b b false true i.val j.val he)
   rcases ht with ⟨hzero, _⟩ | ⟨hEndN, hEndP⟩
   · omega
-  · exact H.differentLengths b (by omega)
+  · rcases H.notBothSingle b with hne | hne
+    · exact hne (by omega)
+    · exact hne (by omega)
 
 theorem pathSpectrum_eq_one (p : Letters) (L D : ℕ) (g : Gram L)
     (hinj : Function.Injective (fun i : Fin (D + 1) => gram p L i.val))

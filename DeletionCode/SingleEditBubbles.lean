@@ -22,7 +22,8 @@ theorem geometry (p : LocalBubble k source target pos orientation) (hk : 1 ≤ k
   have hx' := hx
   rw [p.source_eq] at hx'
   simp only [List.append_assoc] at hx'
-  exact context_geometry hk p.bubble p.left_boundary p.right_boundary p.before p.after hx'
+  exact context_geometry hk p.bubble (fun h => ⟨p.left_boundary h, p.right_boundary h⟩)
+    p.before p.after hx'
 
 /-- The full spectrum change equals the actual positive-minus-negative local
 word spectra, not just an abstract signed vector with the right support. -/
@@ -96,6 +97,24 @@ theorem insertion_bubble (word : List Bool) (pos k : ℕ) (bit : Bool) (hk : 1 �
   obtain ⟨p, hbit⟩ := exists_insertion_bubble word pos k bit hx hleft hright
   exact ⟨p, hbit, LocalBubble.geometry p hk hx, LocalBubble.spectrum_change p⟩
 
+/-- The substitution version: the replaced letter is the run bit, the
+target carries its negation, and no boundary bits are required. -/
+theorem substitution_bubble (pre suffix : List Bool) (bit : Bool) (k : ℕ) (hk : 1 ≤ k)
+    (hx : KUnique (listLetters (pre ++ bit :: suffix)) (pre ++ bit :: suffix).length k)
+    (hleft : 4 * windowLength k ≤ pre.length)
+    (hright : pre.length + 4 * windowLength k ≤ (pre ++ bit :: suffix).length) :
+    ∃ p : RunBubbleConstruction.LocalBubble k (pre ++ bit :: suffix)
+        (pre ++ (!bit) :: suffix) pre.length .substitution,
+      p.bubble.bit = bit ∧ Geometry p.bubble ∧
+      wordSpectrum (listLetters (pre ++ (!bit) :: suffix))
+          (pre ++ (!bit) :: suffix).length (windowLength k) -
+        wordSpectrum (listLetters (pre ++ bit :: suffix))
+          (pre ++ bit :: suffix).length (windowLength k) =
+        wordSpectrum (listLetters p.bubble.positiveWord) p.bubble.positiveWord.length (windowLength k) -
+          wordSpectrum (listLetters p.bubble.negativeWord) p.bubble.negativeWord.length (windowLength k) := by
+  obtain ⟨p, hbit⟩ := exists_substitution_bubble pre suffix bit k hleft hright
+  exact ⟨p, hbit, LocalBubble.geometry p hk hx, LocalBubble.spectrum_change p⟩
+
 /-- Two concrete local source intervals inherit disjointness from a 4L gap. -/
 theorem source_intervals_disjoint {k a b : ℕ} {source target₁ target₂ : List Bool}
     {orientation₁ orientation₂ : Orientation}
@@ -123,6 +142,7 @@ theorem source_intervals_disjoint_of_trace {k : ℕ} {trace : AlignmentTrace.Tra
 #print axioms LocalBubble.source_interval_in_neighborhood
 #print axioms deletion_bubble
 #print axioms insertion_bubble
+#print axioms substitution_bubble
 #print axioms source_intervals_disjoint_of_trace
 
 end DeletionCode.SingleEditBubbles

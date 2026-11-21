@@ -112,8 +112,8 @@ The disjoint-support condition is proved above, rather than assumed here. -/
 theorem attached_blocks_union_bound {k : ℕ} (U : RuleSet k)
     (w : Gram (windowLength k) → ℤ) (t L : ℕ)
     (hsize : ∀ B ∈ blocks U, B.card ≤ L)
-    (hvertices : Fintype.card (RuleSetVertex {w}) ≤ 4 * t * L) :
-    (insert w ((attachedBlocks U w).biUnion id)).card ≤ 1 + 4 * t * L ^ 2 := by
+    (hvertices : Fintype.card (RuleSetVertex {w}) ≤ 2 * t * (2 * L + 1)) :
+    (insert w ((attachedBlocks U w).biUnion id)).card ≤ 1 + 4 * t * L ^ 2 + 2 * t * L := by
   apply AttachedBlocks.attached_union_card_bound_quadratic
   · intro B hB
     exact hsize B ((mem_attachedBlocks U B w).mp hB).1

@@ -4,8 +4,8 @@ import DeletionCode.GoodWordBridge
 import DeletionCode.RedundancyBounds
 
 /-!
-The final code-existence argument of Theorem `thm:main` in the active
-circle-hash manuscript. The actual random hash has an outcome retaining
+The final code-existence argument of Theorem `thm:main`, extended to the
+edit model. The actual random hash has an outcome retaining
 at least half the unique words; bipartite selection and a common label
 give a correcting code. All probability, cardinality, and large-n
 conditions are proved, rather than supplied by the theorem's caller.
@@ -24,7 +24,7 @@ theorem labelCount_eq_scale (t n : ℕ) :
   ring
 
 /-- The finite code-size bound under the explicit parameter thresholds.
-The code corrects the actual insertion/deletion relation on binary words. -/
+The code corrects at most t insertions, deletions and substitutions in total. -/
 theorem exists_large_code (t n : ℕ) (ht : 2 ≤ t) (hn : 1 ≤ n)
     (hfit : PaperParameters.L n ≤ n)
     (hready : PaperProbability.threshold t ≤ PaperParameters.L n) :
@@ -67,7 +67,8 @@ theorem exists_large_code (t n : ℕ) (ht : 2 ≤ t) (hn : 1 ≤ n)
     _ = 8 * Q * C.card := by ring
 
 /-- For every fixed t ≥ 2 and all sufficiently large n, an actual binary
-code corrects t insertions/deletions and has the stated explicit redundancy. -/
+code corrects at most t insertions, deletions and substitutions in total
+and has the stated explicit redundancy. -/
 theorem eventually_exists_code (t : ℕ) (ht : 2 ≤ t) :
     ∀ᶠ n : ℕ in Filter.atTop, ∃ C : Finset (Bits n),
       Corrects t C ∧ C.Nonempty ∧

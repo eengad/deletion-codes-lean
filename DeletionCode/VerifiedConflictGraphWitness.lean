@@ -33,11 +33,11 @@ theorem empty_catalogue (k : ℕ) : ConnectedBlocks.CatalogueRule 0 k 0 := by
 /-- Full separated coverage, including the degenerate k = 0 case. There is
 no target uniqueness, catalogue presentation, or spectrum-sum premise. -/
 theorem separated_coverage (t k n : ℕ) : SeparatedCoverage t k n := by
-  intro x y hx trace hs ht hd hi hsep
+  intro x y hx trace hs ht hbal hsum hsep
   by_cases hk : 1 ≤ k
   · have hx' : KUnique (listLetters trace.source) trace.source.length k := by
       simpa only [hs, List.length_ofFn, listLetters_ofFn] using hx
-    have h := SeparatedTraceCoverage.catalogueRule trace t k hk hx' hsep hd hi
+    have h := SeparatedTraceCoverage.catalogueRule trace t k hk hx' hsep hbal hsum
     simpa only [hs, ht, List.length_ofFn, listLetters_ofFn, spectrum] using h
   · have hk0 : k = 0 := by omega
     subst k

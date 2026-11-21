@@ -96,25 +96,14 @@ theorem geometry_unique {k : ℕ} (bubble : BubbleWord k) (hg : Geometry bubble)
     (hj : j + (windowLength k - 1) ≤ (pathWord bubble side).length)
     (heq : SpectrumPath.vertexAt (listLetters (pathWord bubble side)) (windowLength k) i =
       SpectrumPath.vertexAt (listLetters (pathWord bubble side)) (windowLength k) j) : i = j := by
-  have hlens := long_short_lengths bubble
   have hL : 1 ≤ windowLength k := by unfold windowLength; omega
-  have hlong (hi : i ≤ windowLength k - bubble.rho + 1)
-      (hj : j ≤ windowLength k - bubble.rho + 1)
-      (heq : SpectrumPath.vertexAt (listLetters bubble.longWord) (windowLength k) i =
-        SpectrumPath.vertexAt (listLetters bubble.longWord) (windowLength k) j) : i = j :=
-    congrArg Fin.val (hg.long_simple (a₁ := ⟨i, by omega⟩) (a₂ := ⟨j, by omega⟩) heq)
-  have hshort (hi : i ≤ windowLength k - bubble.rho)
-      (hj : j ≤ windowLength k - bubble.rho)
-      (heq : SpectrumPath.vertexAt (listLetters bubble.shortWord) (windowLength k) i =
-        SpectrumPath.vertexAt (listLetters bubble.shortWord) (windowLength k) j) : i = j :=
-    congrArg Fin.val (hg.short_simple (a₁ := ⟨i, by omega⟩) (a₂ := ⟨j, by omega⟩) heq)
-  cases side <;> cases ho : bubble.orientation <;>
-    simp only [pathWord, BubbleWord.negativeWord, BubbleWord.positiveWord, ho,
-      Bool.false_eq_true, ite_false, ite_true] at hi hj heq
-  · exact hlong (by omega) (by omega) heq
-  · exact hshort (by omega) (by omega) heq
-  · exact hshort (by omega) (by omega) heq
-  · exact hlong (by omega) (by omega) heq
+  cases side
+  · simp only [pathWord, Bool.false_eq_true, ite_false] at hi hj heq
+    exact congrArg Fin.val
+      (hg.negative_simple (a₁ := ⟨i, by omega⟩) (a₂ := ⟨j, by omega⟩) heq)
+  · simp only [pathWord, ite_true] at hi hj heq
+    exact congrArg Fin.val
+      (hg.positive_simple (a₁ := ⟨i, by omega⟩) (a₂ := ⟨j, by omega⟩) heq)
 
 theorem geometry_endpoints {k : ℕ} (bubble : BubbleWord k) (hg : Geometry bubble) (i j : ℕ)
     (hi : i + (windowLength k - 1) ≤ bubble.negativeWord.length)
@@ -124,22 +113,13 @@ theorem geometry_endpoints {k : ℕ} (bubble : BubbleWord k) (hg : Geometry bubb
     (i = 0 ∧ j = 0) ∨
       (i = bubble.negativeWord.length - windowLength k + 1 ∧
         j = bubble.positiveWord.length - windowLength k + 1) := by
-  have hlens := long_short_lengths bubble
   have hL : 1 ≤ windowLength k := by unfold windowLength; omega
-  cases ho : bubble.orientation <;>
-    simp only [BubbleWord.negativeWord, BubbleWord.positiveWord, ho] at hi hj heq ⊢
-  · have h := hg.endpoints i j (by omega) (by omega) (fun r hr => congrFun heq ⟨r, hr⟩)
-    rcases h with h | h
-    · exact Or.inl h
-    · right; omega
-  · have h := hg.endpoints j i (by omega) (by omega) (fun r hr => (congrFun heq ⟨r, hr⟩).symm)
-    rcases h with h | h
-    · left; exact ⟨h.2, h.1⟩
-    · right; omega
+  exact hg.endpoints i j (by omega) (by omega) (fun r hr => congrFun heq ⟨r, hr⟩)
 
 theorem validCatalogue {k ν : ℕ} (words : Fin ν → BubbleWord k)
-    (hboundary : ∀ b, (words b).left.getLast? = some (!(words b).bit) ∧
-      (words b).right.head? = some (!(words b).bit))
+    (hboundary : ∀ b, (words b).orientation ≠ .substitution →
+      (words b).left.getLast? = some (!(words b).bit) ∧
+        (words b).right.head? = some (!(words b).bit))
     (hgeometry : ∀ b, Geometry (words b))
     (hdisjoint : ∀ a b : Fin ν, a ≠ b → ∀ sa sb i j,
       i + (windowLength k - 1) ≤ (pathWord (words a) sa).length →
@@ -201,18 +181,22 @@ theorem rule_spectrum {k ν : ℕ} (words : Fin ν → BubbleWord k) (rank : Fin
   intro b _
   exact congrFun (bubble_spectrum words rank b) g
 
-/-- The signed catalogue constructor with all word-level obligations explicit. -/
+/-- The signed catalogue constructor with all word-level obligations explicit.
+The rule has equally many deletion and insertion bubbles and 2t bubbles in all. -/
 theorem catalogueRule {t k : ℕ} (words : Fin (2 * t) → BubbleWord k)
-    (hboundary : ∀ b, (words b).left.getLast? = some (!(words b).bit) ∧
-      (words b).right.head? = some (!(words b).bit))
+    (hboundary : ∀ b, (words b).orientation ≠ .substitution →
+      (words b).left.getLast? = some (!(words b).bit) ∧
+        (words b).right.head? = some (!(words b).bit))
     (hgeometry : ∀ b, Geometry (words b))
     (hdisjoint : ∀ a b : Fin (2 * t), a ≠ b → ∀ sa sb i j,
       i + (windowLength k - 1) ≤ (pathWord (words a) sa).length →
       j + (windowLength k - 1) ≤ (pathWord (words b) sb).length →
       SpectrumPath.vertexAt (listLetters (pathWord (words a) sa)) (windowLength k) i ≠
         SpectrumPath.vertexAt (listLetters (pathWord (words b) sb)) (windowLength k) j)
-    (hdel : (Finset.univ.filter (fun b => (words b).orientation = .deletion)).card = t)
-    (hins : (Finset.univ.filter (fun b => (words b).orientation = .insertion)).card = t) :
+    (hbal : (Finset.univ.filter (fun b => (words b).orientation = .deletion)).card =
+      (Finset.univ.filter (fun b => (words b).orientation = .insertion)).card)
+    (hsum : 2 * (Finset.univ.filter (fun b => (words b).orientation = .deletion)).card +
+      (Finset.univ.filter (fun b => (words b).orientation = .substitution)).card = 2 * t) :
     ConnectedBlocks.CatalogueRule t k
       (∑ b, (wordSpectrum (listLetters (words b).positiveWord)
         (words b).positiveWord.length (windowLength k) -
@@ -223,7 +207,7 @@ theorem catalogueRule {t k : ℕ} (words : Fin (2 * t) → BubbleWord k)
   · intro r
     have hr : r = 0 := Subsingleton.elim _ _
     subst r
-    simpa only [and_self_left, true_and] using And.intro hdel hins
+    simpa only [and_self_left, true_and] using And.intro hbal hsum
   · exact rule_spectrum words (fun _ => 0)
 
 #print axioms wordSpectrum_eq_pathSpectrum
