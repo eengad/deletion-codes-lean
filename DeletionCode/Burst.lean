@@ -9,6 +9,7 @@ import DeletionCode.Burst.CatalogueBridge
 import DeletionCode.Burst.CatalogueCoverage
 import DeletionCode.Burst.CatalogueFamily
 import DeletionCode.Burst.CatalogueVertexBound
+import DeletionCode.Burst.Channel
 import DeletionCode.Burst.ChronologicalRecords
 import DeletionCode.Burst.ChronologicalSeparation
 import DeletionCode.Burst.CodeExistence

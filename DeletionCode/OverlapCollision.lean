@@ -58,7 +58,7 @@ theorem encode_injective_of_agree (n k a b : ℕ) (hab : a < b)
   have hall : ∀ j, j < n → padBits x j = padBits y j := by
     intro j
     induction j using Nat.strong_induction_on with
-    | h j ih =>
+    | ind j ih =>
       intro hj
       by_cases hbefore : j < b
       · exact encode_eq_at n k b hb x y heq j hj (Or.inl hbefore)

@@ -11,3 +11,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: leanprover/lean-action@v1
+        with:
+          use-github-cache: false
+      - run: lake env lean --run scripts/check-statement-imports.lean

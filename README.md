@@ -4,144 +4,88 @@
 
 A Lean 4 formalization of the main theorem of
 
+> Eyal En Gad, *Explicit codes correcting t edits with redundancy coefficient
+> 2t − 1*, 2026.
+
+The repository also retains the earlier Lean 4 formalization of the existence
+bounds of
+
 > Eyal En Gad, *Polynomially larger deletion codes by linear hashing of
 > substring counts*, [arXiv:2609.19493](https://arxiv.org/abs/2609.19493),
 > 2026.
 
-This development proves Theorems 1.1 and 1.2 of
-[arXiv v2](https://arxiv.org/abs/2609.19493v2) by extending the circle-hash
-argument from v1. The v2 manuscript gives a proof using binary linear hashing.
+See [EXISTENCE.md](EXISTENCE.md) for the existence theorems, file locations,
+and lemma map (the git tag `existence-only` preserves that snapshot on Lean
+4.34.0 with Mathlib as its only dependency).
 
-The bound holds over every fixed finite alphabet of size
-q >= 2, for codes correcting any t >= 2 edits in total, where an edit is a
-single insertion, deletion or substitution. Their redundancy, measured in
-q-ary symbols, is at most (2t-1) log_q n + O_t(log_q log_q n).
-The remainder constant is independent of q; the sufficiently-large-length
-threshold may depend on both t and q.
+## Provenance
 
-The bounded-burst extension proves the same leading coefficient for at most
-t substring replacements U -> V, with both lengths at most a fixed b >= 1.
-Either block may be empty, and successive replacements may overlap. Its
-remainder is O_{t,b}(log_q log_q n), with a constant independent of q.
+The formalization was produced with the assistance of large language models
+(OpenAI's GPT, Anthropic's Claude, and Google's Gemini), as was the paper.
+For the explicit construction, the author read and verified that the formal
+theorem statement and encodings
+([`Statement.lean`](DeletionCode/Explicit/Statement.lean)) and the channel
+definitions ([`Channel.lean`](DeletionCode/Burst/Channel.lean)) — everything
+outside Mathlib that the statement depends on — match the corresponding
+theorem and definitions in the paper. The author did not review the Lean proof
+files, which are checked by the Lean kernel. Only the main theorem is
+formalized, not the paper's intermediate exposition, remark estimates,
+historical comparisons, or related work.
 
-## The theorem
+## Checking the statement
 
-```lean
-theorem DeletionCode.Qary.OptimalRedundancy.main_fin (t : ℕ) (ht : 2 ≤ t) :
-    ∃ K : ℕ, ∀ q : ℕ, 2 ≤ q → ∀ᶠ n : ℕ in atTop,
-      optimalRedundancy (Fin q) t n ≤
-        ((2 * t - 1 : ℕ) : ℝ) * Real.logb q (n : ℝ) +
-          (K : ℝ) * Real.logb q (Real.logb q (n : ℝ))
-```
+To verify what is proved for the explicit paper, only those two short files
+outside Mathlib need to be read (82 lines in total):
 
-Here `optimalRedundancy α t n = n - log_q (optimalCodeSize α t n)`, with
-q the cardinality of α. The optimal size is the attained maximum over all
-subsets of the length-n words in which no two distinct words are confusable. Two words are
-confusable when some output can be reached from each of them by at most t
-single insertions, deletions and substitutions in total
-(`Qary.EditAlignment.Script`, `Qary.EditAlignment.WithinEdits`,
-`Qary.FiniteConflictGraph.Confusable`, `Qary.CodeSelection.Corrects`). This is at
-least as strong as correcting t deletions, and at least as strong as
-correcting t insertions and deletions. The constant is explicit, with no
-attempt at optimisation:
-K = 2 b_t + 12t + 6, where b_t = 4 a_t + 2 (`WitnessCost.exponent`) and
-a_t = 100 t (32 t + 17) is the exponent in the count of Lemma 5.1
-(`CountExponent.exponent`). The result is an existence statement; no encoder
-or decoder is asserted.
+- [`DeletionCode/Explicit/Statement.lean`](DeletionCode/Explicit/Statement.lean)
+  defines the bit encodings (`unaryCode`, `framed`, `wordCode`, `inputCode`)
+  and the theorem statement `DeletionCode.Explicit.DeterministicStatement`,
+  using only Mathlib (`Real.logb`, `Turing.TM2ComputableInPolyTime`) and the
+  channel file below.
+- [`DeletionCode/Burst/Channel.lean`](DeletionCode/Burst/Channel.lean) defines
+  the bounded substring-edit channel (`Word`, `Script`, `WithinBursts`),
+  importing only `Mathlib.Data.List.Basic`.
 
-`Qary.OptimalRedundancy.main_uniform` states the same result for arbitrary
-finite alphabet types, with the existential K before the alphabet
-quantifier. The original binary proof and `OptimalRedundancy.main` remain
-available unchanged. The q-ary development is in `DeletionCode/Qary/`;
-it shares alphabet-independent arithmetic, hashing and graph results with
-the binary development.
+The theorem is proved as `DeletionCode.Explicit.deterministic_mathlib :
+DeterministicStatement` in
+[`DeletionCode/Explicit/DeterministicMathlib.lean`](DeletionCode/Explicit/DeterministicMathlib.lean).
+Although the proof uses `cslib` and `cslib-frontier` internally, neither
+library appears in the statement;
+[`scripts/check-statement-imports.lean`](scripts/check-statement-imports.lean)
+checks that import boundary automatically. No file uses `sorry`, and no axioms
+are added: `#print axioms DeletionCode.Explicit.deterministic_mathlib` reports
+only Lean's three standard axioms (`propext`, `Classical.choice`,
+`Quot.sound`).
 
-## Bounded substring replacements
+## What is proved
 
-```lean
-theorem DeletionCode.Burst.OptimalRedundancy.main_fin
-    (b t : ℕ) (hb : 1 ≤ b) (ht : 2 ≤ t) :
-    ∃ K : ℕ, ∀ q : ℕ, 2 ≤ q → ∀ᶠ n : ℕ in atTop,
-      optimalRedundancy (Fin q) b t n ≤
-        ((2 * t - 1 : ℕ) : ℝ) * Real.logb q (n : ℝ) +
-          (K : ℝ) * Real.logb q (Real.logb q (n : ℝ))
-```
-
-`Burst.Script` counts each nontrivial bounded replacement as one operation.
-`Burst.WithinBursts`, `Burst.Confusable` and `Burst.CodeSelection.Corrects`
-use the actual chronological operations, including overlapping histories.
-The optimum is the attained maximum over all codes correcting this channel.
-`Burst.OptimalRedundancy.main_uniform` quantifies over arbitrary finite
-alphabet types, with K chosen before the alphabet.
-
-The proof uses k = 2 ceil(log_2 n) + 2 and L = 3(k+b+1). Whole-burst
-recovery records cost at most q^(12btR), and the witness cutoff is
-1 + 2t(2L+2b+1)L. An explicit remainder coefficient is
-K = 2 B_t + 12bt + 6, where B_t = 4 A_t + 2 and
-A_t = 106t(32(2t+1)+1). These deliberately loose constants are verified
-in `Burst.CountExponent`, `Burst.WitnessCost` and `Burst.CodeExistence`.
-The development is in `DeletionCode/Burst/`; it reuses the checked q-ary
-support, hashing and graph machinery. The original proofs remain available.
+For every fixed edit budget `t ≥ 2`, substring-edit bound `b ≥ 1`, and
+alphabet size `q ≥ 2`, `DeterministicStatement` asserts the existence of
+uniform deterministic polynomial-time procedures `setup`, `encode`, and
+`decode` (each certified in Mathlib's `TM2ComputableInPolyTime` model with
+finite stack alphabets) for all sufficiently large block lengths `n`. Given
+`n` in unary, `setup` produces polynomially many public bits; using them,
+`encode` maps length-`k n` messages over `Fin q` to length-`n` codewords with
+redundancy at most `(2t − 1) log_q n + C log_q log_q n`, and `decode` recovers
+the message after any sequence of at most `t` bounded `b`-substring edits
+(including single insertions, deletions, and substitutions when `b = 1`, where
+edits may overlap and either block may be empty).
 
 ## Building
 
-Install [elan](https://github.com/leanprover/elan); the toolchain is pinned
-in `lean-toolchain` (Lean 4.34.0) and mathlib is pinned in `lakefile.toml`.
+Install [elan](https://github.com/leanprover/elan). The toolchain is pinned in
+`lean-toolchain` (Lean 4.36.0-rc2), and `cslib-frontier` (which brings in
+`cslib` and Mathlib) is pinned in `lakefile.toml` and `lake-manifest.json`.
 
 ```sh
 lake exe cache get
 lake build
+lake env lean --run scripts/check-statement-imports.lean
 ```
 
-## What is checked
-
-| Paper (arXiv v1) | Lean |
-| --- | --- |
-| Lemma 2.1, most words are k-unique | `UniqueWordCount.most_words_unique_real`, `UniqueWordCount.half_words_le_card_unique` |
-| Lemma 2.2, the spectrum is a simple path and determines the word | `SpectrumPath.spectrum_is_simple_path_and_determines_word` |
-| Lemma 2.3, equal-length confusability | `EditAlignment.equal_length_confusability` |
-| Lemma 2.4, shared source letters | `EditRigidity.shared_source_letters`, `EditRigidity.one_edit_unique`, `ScriptRigidity.within_one_unique` |
-| Lemma 2.6, coverage of separated conflicts | `SeparatedTraceCoverage.catalogueRule`, `VerifiedConflictGraphWitness.separated_coverage` |
-| Lemma 3.2, independent differences | `RandomHash.independent_differences`, `RandomHash.real_rules_survival_probability_toReal`, `RandomHash.real_nonzero_test_probability_toReal` |
-| Lemma 3.3, the nonseparated family is thin | `NonseparatedFamily.nonseparated_family_thin` |
-| Lemma 4.4, connected blocks | `ConnectedBlocks.adjoining_rule_bound`, `ConnectedBlocks.connected_block_bound` |
-| Lemma 4.5, savings from a relation | `RelationSavings.savings_from_relation` |
-| Lemma 4.6, bounded witness | `VerifiedConflictGraphWitness.bounded_witness` |
-| Lemma 5.1, counting generating sets | `ManuscriptCounting.counting_generating_sets` |
-| Proposition 6.1, obstructions are rare | `PaperProbability.obstructions_are_rare` |
-| Theorems 1.1 and 6.2 | `OptimalRedundancy.main`, with `CodeExistence.main` and `CodeExistence.eventually_exists_code` |
-
-The table describes the preserved binary development and uses the published
-version 1 numbering. Its `Qary` counterparts extend the word, edit, recovery,
-counting, witness and code-existence arguments to finite alphabets.
-The formalization extends
-the error model to t insertions, deletions and substitutions in total. Some
-intermediate results also drop unnecessary hypotheses: Lemma 4.5 needs no
-lower bound on |I|, and Lemma 4.4 holds for every t >= 1. The edit version
-uses the slightly larger witness cutoff 1 + 4tL^2 + 2tL and the threshold
-L >= 4t+3; these preserve the final redundancy bound.
-[VERIFIED_LEMMAS.md](VERIFIED_LEMMAS.md) gives the exact hypotheses and
-bounds, including separate sections for the edit, finite-alphabet and burst extensions.
-The finite-alphabet section records the different auxiliary window choice
-and the deliberately loose alphabet factor in the recovery-record count.
-
-## What is not checked
-
-Lean certifies the formal statements. That each formal statement says what
-the corresponding statement of the paper says is a matter of reading the
-definitions, and is the reader's to check; the table above and
-VERIFIED_LEMMAS.md are there to make that easy. The formalization does not
-cover the paper's narrative, its historical comparisons, or its related work.
-
-No proof uses `sorry`, and no axioms are added. The axioms reported for the
-final theorem are Lean's standard `propext`, `Classical.choice` and
-`Quot.sound`.
-
-## Provenance
-
-The formalization was developed with the assistance of large language
-models, as was the paper. Every definition and proof in this repository is
-checked by the Lean kernel.
+`lake build` builds both the explicit and existence developments and runs the
+`#print axioms` checks. To build only the explicit theorem and its
+dependencies, run `lake build DeletionCode.Explicit.DeterministicMathlib`.
 
 ## Licence
 

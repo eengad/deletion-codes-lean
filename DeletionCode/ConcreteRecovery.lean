@@ -29,7 +29,7 @@ theorem bounded_run (M : Model B x n k) (hx : KUnique x n k)
         instructions.length + s.score ≤ N := by
     intro d
     induction d using Nat.strong_induction_on with
-    | h d ih =>
+    | ind d ih =>
       intro s mem hd hi
       by_cases hdone : ∀ b, s.Complete b
       · refine ⟨[], mem, s, rfl, hi, hdone, ?_⟩

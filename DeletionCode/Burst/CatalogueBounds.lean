@@ -125,7 +125,7 @@ theorem seeded_component_growth (ht : 1 ≤ t) (U I : RuleSet α k)
       U.card - S.card = n → P U := by
     intro n
     induction n using Nat.strong_induction_on with
-    | h n ih =>
+    | ind n ih =>
       intro S hIS hSU hP hdiff
       by_cases heq : S = U
       · simpa only [heq] using hP

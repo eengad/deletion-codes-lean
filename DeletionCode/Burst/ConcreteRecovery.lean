@@ -31,7 +31,7 @@ theorem bounded_run (M : Model B x n k d) (hx : KUnique x n k)
         instructions.length + s.score ≤ N := by
     intro fuel
     induction fuel using Nat.strong_induction_on with
-    | h fuel ih =>
+    | ind fuel ih =>
       intro s mem hd hi
       by_cases hdone : ∀ b, s.Complete b
       · refine ⟨[], mem, s, rfl, hi, hdone, ?_⟩
