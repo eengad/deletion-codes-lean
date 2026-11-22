@@ -1,4 +1,146 @@
-# Verification map
+# Existence bounds (`arXiv:2609.19493`)
+
+This document covers the retained Lean 4 formalization of the existence bounds
+of
+
+> Eyal En Gad, *Polynomially larger deletion codes by linear hashing of
+> substring counts*, [arXiv:2609.19493](https://arxiv.org/abs/2609.19493),
+> 2026.
+
+(For the explicit polynomial-time construction, see [README.md](README.md).)
+
+This development proves Theorems 1.1 and 1.2 of
+[arXiv v2](https://arxiv.org/abs/2609.19493v2) by extending the circle-hash
+argument from v1. The v2 manuscript gives a proof using binary linear hashing.
+
+## Statements, axioms, and building
+
+- **Single edits over finite alphabets:** `DeletionCode.Qary.OptimalRedundancy.main_fin`
+  (and `main_uniform`) in
+  [`DeletionCode/Qary/OptimalRedundancy.lean`](DeletionCode/Qary/OptimalRedundancy.lean),
+  with definitions in
+  [`Qary/OptimalCode.lean`](DeletionCode/Qary/OptimalCode.lean),
+  [`Qary/EditAlignment.lean`](DeletionCode/Qary/EditAlignment.lean),
+  [`Qary/FiniteConflictGraph.lean`](DeletionCode/Qary/FiniteConflictGraph.lean),
+  and [`Qary/CodeSelection.lean`](DeletionCode/Qary/CodeSelection.lean).
+- **Bounded substring edits:** `DeletionCode.Burst.OptimalRedundancy.main_fin`
+  (and `main_uniform`) in
+  [`DeletionCode/Burst/OptimalRedundancy.lean`](DeletionCode/Burst/OptimalRedundancy.lean),
+  with definitions in
+  [`Burst/Channel.lean`](DeletionCode/Burst/Channel.lean),
+  [`Burst/OptimalCode.lean`](DeletionCode/Burst/OptimalCode.lean),
+  [`Burst/FiniteConflictGraph.lean`](DeletionCode/Burst/FiniteConflictGraph.lean),
+  and [`Burst/CodeSelection.lean`](DeletionCode/Burst/CodeSelection.lean).
+- **Original binary development:** `DeletionCode.OptimalRedundancy.main` in
+  [`DeletionCode/OptimalRedundancy.lean`](DeletionCode/OptimalRedundancy.lean).
+
+No proof uses `sorry`, and `#print axioms` on each theorem above reports only
+Lean's standard `propext`, `Classical.choice`, and `Quot.sound`.
+
+On `main` (Lean `4.36.0-rc2` with `cslib-frontier`, `cslib`, and Mathlib), you
+can build only the existence proofs with:
+
+```sh
+lake exe cache get
+lake build DeletionCode.Qary DeletionCode.Burst DeletionCode.OptimalRedundancy
+```
+
+For the standalone existence-only snapshot before the explicit construction was
+added — on Lean `4.34.0` with Mathlib as its sole dependency — check out the
+`existence-only` git tag (`git checkout existence-only`).
+
+## The single-edit theorem
+
+```lean
+theorem DeletionCode.Qary.OptimalRedundancy.main_fin (t : ℕ) (ht : 2 ≤ t) :
+    ∃ K : ℕ, ∀ q : ℕ, 2 ≤ q → ∀ᶠ n : ℕ in atTop,
+      optimalRedundancy (Fin q) t n ≤
+        ((2 * t - 1 : ℕ) : ℝ) * Real.logb q (n : ℝ) +
+          (K : ℝ) * Real.logb q (Real.logb q (n : ℝ))
+```
+
+Here `optimalRedundancy α t n = n - log_q (optimalCodeSize α t n)`, with
+q the cardinality of α. The optimal size is the attained maximum over all
+subsets of the length-n words in which no two distinct words are confusable. Two words are
+confusable when some output can be reached from each of them by at most t
+single insertions, deletions and substitutions in total
+(`Qary.EditAlignment.Script`, `Qary.EditAlignment.WithinEdits`,
+`Qary.FiniteConflictGraph.Confusable`, `Qary.CodeSelection.Corrects`). This is at
+least as strong as correcting t deletions, and at least as strong as
+correcting t insertions and deletions. The constant is explicit, with no
+attempt at optimisation:
+K = 2 b_t + 12t + 6, where b_t = 4 a_t + 2 (`WitnessCost.exponent`) and
+a_t = 100 t (32 t + 17) is the exponent in the count of Lemma 5.1
+(`CountExponent.exponent`). The result is an existence statement; no encoder
+or decoder is asserted.
+
+`Qary.OptimalRedundancy.main_uniform` states the same result for arbitrary
+finite alphabet types, with the existential K before the alphabet
+quantifier. The original binary proof and `OptimalRedundancy.main` remain
+available unchanged. The q-ary development is in `DeletionCode/Qary/`;
+it shares alphabet-independent arithmetic, hashing and graph results with
+the binary development.
+
+## Bounded substring replacements
+
+```lean
+theorem DeletionCode.Burst.OptimalRedundancy.main_fin
+    (b t : ℕ) (hb : 1 ≤ b) (ht : 2 ≤ t) :
+    ∃ K : ℕ, ∀ q : ℕ, 2 ≤ q → ∀ᶠ n : ℕ in atTop,
+      optimalRedundancy (Fin q) b t n ≤
+        ((2 * t - 1 : ℕ) : ℝ) * Real.logb q (n : ℝ) +
+          (K : ℝ) * Real.logb q (Real.logb q (n : ℝ))
+```
+
+`Burst.Script` counts each nontrivial bounded replacement as one operation.
+`Burst.WithinBursts`, `Burst.Confusable` and `Burst.CodeSelection.Corrects`
+use the actual chronological operations, including overlapping histories.
+The optimum is the attained maximum over all codes correcting this channel.
+`Burst.OptimalRedundancy.main_uniform` quantifies over arbitrary finite
+alphabet types, with K chosen before the alphabet.
+
+The proof uses k = 2 ceil(log_2 n) + 2 and L = 3(k+b+1). Whole-burst
+recovery records cost at most q^(12btR), and the witness cutoff is
+1 + 2t(2L+2b+1)L. An explicit remainder coefficient is
+K = 2 B_t + 12bt + 6, where B_t = 4 A_t + 2 and
+A_t = 106t(32(2t+1)+1). These deliberately loose constants are verified
+in `Burst.CountExponent`, `Burst.WitnessCost` and `Burst.CodeExistence`.
+The development is in `DeletionCode/Burst/`; it reuses the checked q-ary
+support, hashing and graph machinery. The original proofs remain available.
+
+## What is checked
+
+| Paper (arXiv v1) | Lean |
+| --- | --- |
+| Lemma 2.1, most words are k-unique | `UniqueWordCount.most_words_unique_real`, `UniqueWordCount.half_words_le_card_unique` |
+| Lemma 2.2, the spectrum is a simple path and determines the word | `SpectrumPath.spectrum_is_simple_path_and_determines_word` |
+| Lemma 2.3, equal-length confusability | `EditAlignment.equal_length_confusability` |
+| Lemma 2.4, shared source letters | `EditRigidity.shared_source_letters`, `EditRigidity.one_edit_unique`, `ScriptRigidity.within_one_unique` |
+| Lemma 2.6, coverage of separated conflicts | `SeparatedTraceCoverage.catalogueRule`, `VerifiedConflictGraphWitness.separated_coverage` |
+| Lemma 3.2, independent differences | `RandomHash.independent_differences`, `RandomHash.real_rules_survival_probability_toReal`, `RandomHash.real_nonzero_test_probability_toReal` |
+| Lemma 3.3, the nonseparated family is thin | `NonseparatedFamily.nonseparated_family_thin` |
+| Lemma 4.4, connected blocks | `ConnectedBlocks.adjoining_rule_bound`, `ConnectedBlocks.connected_block_bound` |
+| Lemma 4.5, savings from a relation | `RelationSavings.savings_from_relation` |
+| Lemma 4.6, bounded witness | `VerifiedConflictGraphWitness.bounded_witness` |
+| Lemma 5.1, counting generating sets | `ManuscriptCounting.counting_generating_sets` |
+| Proposition 6.1, obstructions are rare | `PaperProbability.obstructions_are_rare` |
+| Theorems 1.1 and 6.2 | `OptimalRedundancy.main`, with `CodeExistence.main` and `CodeExistence.eventually_exists_code` |
+
+The table describes the preserved binary development and uses the published
+version 1 numbering. Its `Qary` counterparts extend the word, edit, recovery,
+counting, witness and code-existence arguments to finite alphabets.
+The formalization extends
+the error model to t insertions, deletions and substitutions in total. Some
+intermediate results also drop unnecessary hypotheses: Lemma 4.5 needs no
+lower bound on |I|, and Lemma 4.4 holds for every t >= 1. The edit version
+uses the slightly larger witness cutoff 1 + 4tL^2 + 2tL and the threshold
+L >= 4t+3; these preserve the final redundancy bound.
+The detailed verification map below gives the exact hypotheses and
+bounds, including separate sections for the edit, finite-alphabet and burst extensions.
+The finite-alphabet section records the different auxiliary window choice
+and the deliberately loose alphabet factor in the recovery-record count.
+
+## Detailed verification map
 
 Eleven lemmas, one proposition, and the final theorem of the paper are
 verified. The target is
@@ -8,7 +150,7 @@ verified. The target is
 > [arXiv:2609.19493v1](https://arxiv.org/abs/2609.19493v1), 16 September 2026.
 
 Statements are identified below by the LaTeX labels of the paper's source;
-the README gives the corresponding lemma numbers. The introductory
+the table above gives the corresponding lemma numbers. The introductory
 `thm:intro` is the same result restated as `thm:main`. Comparisons with the
 paper below refer to published version 1 and the preserved binary development.
 The final sections record the extensions to arbitrary finite alphabets and
@@ -24,7 +166,7 @@ probability proof and preserve the final asymptotic bound. Some intermediate
 statements also drop unnecessary hypotheses. The table and the section
 "The edit model" at the end record these differences explicitly.
 
-## Complete manuscript statements
+### Complete manuscript statements
 
 | Paper statement | Lean theorem | Hypotheses and interpretation |
 | --- | --- | --- |
@@ -110,7 +252,7 @@ Consequently at most 2t components have singleton occurrence fibers, and
 `ComponentFibers.component_count_bound` proves the remaining counting step.
 No support-containment or component-count conclusion is supplied as a premise.
 
-## Verified separated coverage
+### Verified separated coverage
 
 `SeparatedTraceCoverage.catalogueRule` proves the entire coverage lemma.
 Its local constructions and geometric arguments are as follows.
@@ -202,7 +344,7 @@ disjointness. Finally,
 and handles k = 0: uniqueness forces an empty word, hence t = 0 and the
 empty catalogue. This proves the existing coverage interface without changing it.
 
-## Verified bounded-witness extraction core
+### Verified bounded-witness extraction core
 
 `BoundedWitnessWalk.extract` proves the complete extraction from an odd closed
 walk of Boolean integer spectrum vectors. Its inputs are t >= 2 and a finite
@@ -264,7 +406,7 @@ enumeration or combined presentation is assumed.
 of actual k-unique length-n words. It derives Boolean spectra from the checked
 path results. The following connection supplies its graph and hash inputs.
 
-## Complete deterministic conflict-graph connection
+### Complete deterministic conflict-graph connection
 
 `VerifiedConflictGraphWitness.bounded_witness` proves the bounded-witness
 conclusion starting from the manuscript's explicitly defined finite conflict
@@ -313,7 +455,7 @@ unproved lemma remains among its hypotheses. The table above distinguishes
 **eleven complete manuscript lemmas**, including `lem:coverage` and `lem:witness`,
 from the separately verified obstruction proposition and final theorem.
 
-## Verified random hash probabilities
+### Verified random hash probabilities
 
 `CircleUniform.realWeights` is the finite product of Lebesgue measure
 restricted to [0,1); each coordinate and the product are probability measures.
@@ -342,7 +484,7 @@ or occurrence multiplicity. Empty families have probability one.
 The nonzero-vector statement follows by proving independence of its singleton.
 The vectors and catalogue are fixed before sampling, as in the paper.
 
-## Verified nonseparated-family bound
+### Verified nonseparated-family bound
 
 `AnchorRecords` records edit columns in chronological order, retaining their
 matched-column anchors, orientations, and inserted bits. An executable decoder
@@ -379,7 +521,7 @@ bound and the derived count yield `NonseparatedFamily.nonseparated_family_thin`
 on the actual product of uniform real [0,1) weights. No record-cover, cardinality,
 independence, or event-measurability premise is supplied by its callers.
 
-## Verified obstruction proposition
+### Verified obstruction proposition
 
 `WitnessCounting.Candidate` describes fixed underlying rule sets satisfying
 the actual generating-set predicate, rational independence, and witness size
@@ -407,7 +549,7 @@ eventually and n <= 2^R whenever L < R for the actual logarithmic parameter.
 proposition with only fixed t >= 2, sufficiently large n, the stated lower
 bound on Q, and source membership in the actual unique-word family.
 
-## Verified final theorem and optimal redundancy
+### Verified final theorem and optimal redundancy
 
 `PaperProbability.total_discard_le` combines the actual exceptional-event
 bound 1/4 and obstruction-event bound 1/12. The required threshold depends
@@ -452,7 +594,7 @@ and `exists_optimal_code` proves attainment. The theorem
 redundancy. Finally, `OptimalRedundancy.main` gives the paper's bound on red*(n)
 itself, not merely on a supplied feasible code.
 
-## Verification boundary
+### Verification boundary
 
 The checked statements have no admitted proofs or added axioms. Their axiom
 reports use only `propext`, `Classical.choice`, and `Quot.sound`, or subsets of
@@ -466,7 +608,7 @@ historical comparison, or related-literature claim in the paper. The final
 code selection is an existence proof, with no efficient encoder or decoder
 asserted.
 
-## The edit model
+### The edit model
 
 The formalization proves the paper's theorem for codes correcting t edits,
 where an edit is a single insertion, deletion or substitution, and
@@ -508,7 +650,7 @@ The final statement `OptimalRedundancy.main` is unchanged in form; its
 definition of a correcting code, `CodeSelection.Corrects`, now refers to t
 edits of the three kinds.
 
-## Finite alphabets
+### Finite alphabets
 
 The `DeletionCode.Qary` development proves the same leading redundancy
 coefficient for every fixed finite alphabet with q >= 2 symbols and t >= 2
@@ -557,7 +699,7 @@ target, and a run whose two boundary symbols differ. These `Qary` modules
 use single-letter edits; the separate `Burst` development below treats
 bounded substring replacements.
 
-## Bounded substring replacements
+### Bounded substring replacements
 
 The `DeletionCode.Burst` development proves the same leading coefficient
 for at most t bounded bursts, for each fixed b >= 1 and t >= 2. In

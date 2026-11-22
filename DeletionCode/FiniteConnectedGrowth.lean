@@ -56,7 +56,7 @@ theorem connected_induction (B : Finset α) (r : α → α → Prop)
       P U → B.card - U.card = d → P B := by
     intro d
     induction d using Nat.strong_induction_on with
-    | h d ih =>
+    | ind d ih =>
       intro U hsub hU hP hdiff
       by_cases heq : U = B
       · simpa only [heq] using hP

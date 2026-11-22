@@ -1,14 +1,9 @@
+import DeletionCode.Burst.Channel
 import DeletionCode.Qary.Windows
 import DeletionCode.Qary.CatalogueWords
 
-/-!
-The bounded substring-replacement channel. Each operation replaces one block
-by another; either block may be empty, and successive operations may overlap.
-The operation count measures whole replacements, independently of their lengths.
--/
 namespace DeletionCode.Burst
 
-abbrev Word (α : Type*) := List α
 abbrev Letters (α : Type*) := Qary.Windows.Letters α
 
 def windowLength (k b : ℕ) : ℕ := 3 * (k + b + 1)
@@ -52,18 +47,6 @@ def word [Inhabited α] (e : Edit α) (x : Letters α) : Letters α :=
     else x (i + e.removed - e.replacement.length)
 
 end Edit
-
-/-- A history of exactly r nontrivial replacements, each bounded by b.
-No separation condition is imposed on the channel. -/
-inductive Script {α : Type*} (b : ℕ) : Word α → Word α → ℕ → Prop
-  | refl (x : Word α) : Script b x x 0
-  | step {x pre suffix U V : Word α} {r : ℕ}
-      (hU : U.length ≤ b) (hV : V.length ≤ b) (hne : U ≠ V)
-      (history : Script b x (pre ++ U ++ suffix) r) :
-      Script b x (pre ++ V ++ suffix) (r + 1)
-
-def WithinBursts {α : Type*} (b t : ℕ) (x y : Word α) : Prop :=
-  ∃ r, r ≤ t ∧ Script b x y r
 
 def Confusable {α : Type*} (b t : ℕ) (x y : Word α) : Prop :=
   ∃ output, WithinBursts b t x output ∧ WithinBursts b t y output

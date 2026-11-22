@@ -189,7 +189,7 @@ theorem terminal_started_complete (M : Data B) (s : State B)
   have aux : ∀ r : ℕ, ∀ b, M.rank b = r → s.Started b → s.Complete b := by
     intro r
     induction r using Nat.strong_induction_on with
-    | h r ih =>
+    | ind r ih =>
       intro b hr hb
       by_contra hnot
       obtain ⟨w, hw, hmissing⟩ := State.frontier s b hb hnot
@@ -309,7 +309,7 @@ theorem bounded_recovery (M : Data B) (s : State B)
       ∃ m q', Trace M m q q' ∧ (∀ b, q'.Complete b) ∧ m + q.score ≤ N := by
     intro d
     induction d using Nat.strong_induction_on with
-    | h d ih =>
+    | ind d ih =>
       intro q hd hq
       by_cases hdone : ∀ b, q.Complete b
       · exact ⟨0, q, Trace.nil q, hdone, by
