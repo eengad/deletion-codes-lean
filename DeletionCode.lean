@@ -267,7 +267,7 @@ import DeletionCode.Explicit.Machine.SourceCallbacks
 /-!
 Root library module for `deletion-codes-lean` (built by default via `lake build`).
 It brings together:
-- the explicit deterministic polynomial-time `(2t - 1)`-redundancy construction
+- the explicit deterministic polynomial-time construction with redundancy coefficient `2t - 1`
   (`DeletionCode.Explicit.deterministic_mathlib : DeletionCode.Explicit.DeterministicStatement`), and
 - the retained existence bounds (`DeletionCode.Qary`, `DeletionCode.Burst`,
   and `DeletionCode.OptimalRedundancy`).

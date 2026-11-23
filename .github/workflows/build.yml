@@ -27,12 +27,15 @@ jobs:
           raw = sys.argv[1]
           text = " ".join(raw.split())
           name = "'DeletionCode.Explicit.deterministic_mathlib'"
-          if f"{name} does not depend on any axioms" in text:
+          pat = re.escape(name) + r" (?:does not depend on any axioms|depends on axioms: \[([^\]]+)\])"
+          matches = list(re.finditer(pat, text))
+          assert len(matches) == 1, f"Expected one axioms report for {name}:\n{raw}"
+          body = matches[0].group(1)
+          if body is None:
               axioms = set()
           else:
-              m = re.search(re.escape(name) + r" depends on axioms: \[([^\]]*)\]", text)
-              assert m, f"Missing axioms output:\n{raw}"
-              axioms = {a.strip() for a in m.group(1).split(",") if a.strip()}
+              axioms = {a.strip() for a in body.split(",") if a.strip()}
+              assert axioms, f"Empty axioms list:\n{raw}"
           allowed = {"propext", "Classical.choice", "Quot.sound"}
           extra = axioms - allowed
           assert not extra, f"Disallowed axioms: {sorted(extra)}"
