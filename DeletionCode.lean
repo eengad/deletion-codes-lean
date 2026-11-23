@@ -1,3 +1,10 @@
+-- Main explicit-construction theorem and standalone statement
+import DeletionCode.Explicit.Statement
+import DeletionCode.Explicit.DeterministicMathlib
+import DeletionCode.Explicit.DeterministicTM2
+import DeletionCode.Explicit.Deterministic
+
+-- Retained existence development and shared lemmas
 import DeletionCode.Windows
 import DeletionCode.WordPaths
 import DeletionCode.RootSelection
@@ -129,10 +136,9 @@ import DeletionCode.CodeExistence
 import DeletionCode.OptimalRedundancy
 import DeletionCode.Qary
 import DeletionCode.Burst
+
+-- Remaining explicit-construction modules
 import DeletionCode.Explicit.Borrowed.Specialization
-import DeletionCode.Explicit.Deterministic
-import DeletionCode.Explicit.DeterministicTM2
-import DeletionCode.Explicit.DeterministicMathlib
 import DeletionCode.Explicit.Machine.WordRank
 import DeletionCode.Explicit.Machine.TagTables
 import DeletionCode.Explicit.Machine.Assembly
@@ -258,5 +264,11 @@ import DeletionCode.Explicit.Machine.SourcePeelingPayload
 import DeletionCode.Explicit.Machine.SourcePeelingBranch
 import DeletionCode.Explicit.Machine.SourceCallbacks
 
-/-! The full upper-bound proof: eleven manuscript lemmas, the obstruction
-proposition, and the final code-existence and optimal-redundancy theorems. -/
+/-!
+Root library module for `deletion-codes-lean` (built by default via `lake build`).
+It brings together:
+- the explicit deterministic polynomial-time `(2t - 1)`-redundancy construction
+  (`DeletionCode.Explicit.deterministic_mathlib : DeletionCode.Explicit.DeterministicStatement`), and
+- the retained existence bounds (`DeletionCode.Qary`, `DeletionCode.Burst`,
+  and `DeletionCode.OptimalRedundancy`).
+-/

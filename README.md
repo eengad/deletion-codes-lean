@@ -53,9 +53,12 @@ Although the proof uses `cslib` and `cslib-frontier` internally, neither
 library appears in the statement;
 [`scripts/check-statement-imports.lean`](scripts/check-statement-imports.lean)
 checks that import boundary automatically. No file uses `sorry`, and no axioms
-are added: `#print axioms DeletionCode.Explicit.deterministic_mathlib` reports
-only Lean's three standard axioms (`propext`, `Classical.choice`,
-`Quot.sound`).
+are added: [`scripts/verify-explicit-theorem.lean`](scripts/verify-explicit-theorem.lean)
+checks that `deterministic_mathlib` has type `DeterministicStatement` and
+prints its axioms, and the GitHub Actions workflow
+([`.github/workflows/build.yml`](.github/workflows/build.yml)) fails if any
+axiom outside Lean's three standard axioms (`propext`, `Classical.choice`,
+`Quot.sound`) — such as `sorryAx` — appears.
 
 ## What is proved
 
@@ -81,11 +84,14 @@ Install [elan](https://github.com/leanprover/elan). The toolchain is pinned in
 lake exe cache get
 lake build
 lake env lean --run scripts/check-statement-imports.lean
+lake env lean scripts/verify-explicit-theorem.lean
 ```
 
-`lake build` builds both the explicit and existence developments and runs the
+`lake build` builds both the explicit and existence developments (starting from
+the root module [`DeletionCode.lean`](DeletionCode.lean)) and runs the
 `#print axioms` checks. To build only the explicit theorem and its
-dependencies, run `lake build DeletionCode.Explicit.DeterministicMathlib`.
+dependencies, run `lake build DeletionCode.Explicit.DeterministicMathlib`
+followed by the two verification commands above.
 
 ## Licence
 
