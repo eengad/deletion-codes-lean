@@ -13,4 +13,31 @@ jobs:
       - uses: leanprover/lean-action@v1
         with:
           use-github-cache: false
-      - run: lake env lean --run scripts/check-statement-imports.lean
+      - name: Check statement imports and theorem axioms
+        run: |
+          lake env lean --run scripts/check-statement-imports.lean
+          if ! out="$(lake env lean scripts/verify-explicit-theorem.lean 2>&1)"; then
+            echo "$out"
+            exit 1
+          fi
+          echo "$out"
+          python3 - "$out" <<'PY'
+          import re, sys
+
+          raw = sys.argv[1]
+          text = " ".join(raw.split())
+          name = "'DeletionCode.Explicit.deterministic_mathlib'"
+          pat = re.escape(name) + r" (?:does not depend on any axioms|depends on axioms: \[([^\]]+)\])"
+          matches = list(re.finditer(pat, text))
+          assert len(matches) == 1, f"Expected one axioms report for {name}:\n{raw}"
+          body = matches[0].group(1)
+          if body is None:
+              axioms = set()
+          else:
+              axioms = {a.strip() for a in body.split(",") if a.strip()}
+              assert axioms, f"Empty axioms list:\n{raw}"
+          allowed = {"propext", "Classical.choice", "Quot.sound"}
+          extra = axioms - allowed
+          assert not extra, f"Disallowed axioms: {sorted(extra)}"
+          print(f"Verified axioms: {sorted(axioms)}")
+          PY
