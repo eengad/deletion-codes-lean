@@ -5,7 +5,8 @@
 A Lean 4 formalization of the main theorem of
 
 > Eyal En Gad, *Explicit codes correcting t edits with redundancy coefficient
-> 2t − 1*, 2026.
+> 2t − 1*, [preprint PDF](paper/explicit_codes_2t_minus_1.pdf) (submitted to
+> arXiv, ID pending), 2026.
 
 The repository also retains the earlier Lean 4 formalization of the existence
 bounds of
